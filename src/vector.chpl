@@ -1,4 +1,7 @@
 module Vector {
+
+    import Random;
+
     record Vec3 {
         var x: real;
         var y: real;
@@ -37,8 +40,12 @@ module Vector {
         return new Vec3(v.x / b, v.y / b, v.z / b);
     }
 
+    proc Vec3.length_squared() : real {
+        return x**2 + y**2 + z**2;
+    }
+
     proc Vec3.length() : real {
-        return sqrt(x**2 + y**2 + z**2);
+        return sqrt(this.length_squared());
     }
 
     proc Vec3.dot(other: Vec3) : real {
@@ -69,6 +76,50 @@ module Vector {
             y = if this.y < 0 then -this.y else this.y,
             z = if this.z < 0 then -this.z else this.z
         );
+    }
+
+    proc randomVec3() : Vec3 {
+        var randStream = new Random.randomStream(real);
+        return new Vec3(
+            x = randStream.next(),
+            y = randStream.next(),
+            z = randStream.next()
+        );
+    }
+
+    proc randomVec3(min: real, max: real) : Vec3 {
+        var randStream = new Random.randomStream(real);
+        return new Vec3(
+            x = randStream.next(min, max),
+            y = randStream.next(min, max),
+            z = randStream.next(min, max)
+        );
+    }
+
+    proc randomVec3InUnitSphere() : Vec3 {
+        while true {
+            var p = randomVec3(-1.0, 1.0);
+            if p.length_squared() < 1.0 {
+                return p;
+            }
+        }
+        // Unreachable
+        return new Vec3(0.0, 0.0, 0.0);
+    }
+
+    proc randomVec3Unit() : Vec3 {
+        var vec = randomVec3InUnitSphere();
+        vec.normalise();
+        return vec;
+    }
+
+    proc randomVec3InHemisphere(normal: Vec3) : Vec3 {
+        var inUnitSphere = randomVec3InUnitSphere();
+        if inUnitSphere.dot(normal) > 0.0 {
+            return inUnitSphere;
+        } else {
+            return -inUnitSphere;
+        }
     }
 
     type Point = Vec3;

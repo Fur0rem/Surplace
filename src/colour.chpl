@@ -20,6 +20,38 @@ module Colour {
         }
     }
 
+    operator + (a: RGB, b: RGB) : RGB {
+        return new RGB(a.r + b.r, a.g + b.g, a.b + b.b);
+    }
+
+    operator - (a: RGB, b: RGB) : RGB {
+        return new RGB(a.r - b.r, a.g - b.g, a.b - b.b);
+    }
+
+    operator += (ref a: RGB, b: RGB) {
+        a.r += b.r;
+        a.g += b.g;
+        a.b += b.b;
+    }
+
+    operator -= (ref a: RGB, b: RGB) {
+        a.r -= b.r;
+        a.g -= b.g;
+        a.b -= b.b;
+    }
+
+    operator * (a: RGB, b: real) : RGB {
+        return new RGB(a.r * b, a.g * b, a.b * b);
+    }
+
+    operator * (a: real, b: RGB) : RGB {
+        return new RGB(a * b.r, a * b.g, a * b.b);
+    }
+
+    operator / (a: RGB, b: real) : RGB {
+        return new RGB(a.r / b, a.g / b, a.b / b);
+    }
+
     const BLACK = new RGB(0.0, 0.0, 0.0);
     const LIGHT_BLUE = new RGB(0.5, 0.6, 1.0);
     const RED = new RGB(1.0, 0.0, 0.0);

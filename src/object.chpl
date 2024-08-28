@@ -4,6 +4,7 @@ module Object {
     use Transformation;
     use Ray;
     use Rendering;
+    import Camera;
 
     enum Shape {
         Sphere,
@@ -62,10 +63,30 @@ module Object {
         this.objects = objects;
     }
 
-    proc Scene.ray_march(in ray: Ray, ref render: Render, x: uint, y: uint) {
+    record Hit {
+        var did_hit: bool;
+        var colour: Colour.RGB;
+        var normal: Vec3;
+    }
+
+    proc Scene.ray_march(in ray: Ray, depth: uint) : Hit {
         param MAX_STEPS: uint = 500;
         param MAX_DIST: real = 300.0;
         param EPS: real = 0.001;
+
+        const no_hit = new Hit(
+            did_hit = false,
+            colour = Colour.LIGHT_BLUE,
+            normal = new Vec3(0.0, 0.0, 0.0)
+        );
+
+        if depth == 0 {
+            return new Hit(
+                did_hit = false,
+                colour = Colour.BLACK,
+                normal = new Vec3(0.0, 0.0, 0.0)
+            );
+        } 
 
         for i in 0..MAX_STEPS {
             var min_hit = this.objects[0];
@@ -93,33 +114,108 @@ module Object {
                 delta = delta * scale;
                 const dist = delta.length();
 
-                if (x == render.colour.width / 2) && (y == render.colour.height / 2) && (i == 0) && (object == this.objects[1]) {
-                    writeln("objdist: ", obj_dist, " dist: ", dist);
-                }
-
                 if dist < min_dist {
                     min_hit = object;
                     min_dist = dist;
                 }
             }
             if min_dist > MAX_DIST {
-                render.colour.pixels[x, y] = Colour.LIGHT_BLUE;
-                // writeln("OUT OF DIST");
-                return;
+                return no_hit;
             }
             if min_dist < EPS {
-                var normals = min_hit.normal(ray.origin);
-                normals = (normals + 1.0) / 2;
-                const rgb_normals = new RGB(r = normals.x, g = normals.y, b = normals.z);
-                render.colour.pixels[x, y] = min_hit.colour;
-                render.normal.pixels[x, y] = rgb_normals;
-                return;
+                var normal = min_hit.normal(ray.origin);
+                normal = (normal + 1.0) / 2;
+
+                // if (depth != 0) {
+                //     var bounce_dir = randomVec3InHemisphere(normal);
+                //     var bounce_origin = ray.origin + ray.direction * min_dist;
+                //     var bounce_ray = new Ray(origin = bounce_origin, direction = bounce_dir);
+                //     bounce_ray.advance(0.01);
+                //     var bounce_hit = this.ray_march(bounce_ray, depth - 1);
+                //     const reflect = 0.4;
+                //     return new Hit(
+                //         did_hit = true,
+                //         colour = new RGB(
+                //             r = (min_hit.colour.r * reflect) + (bounce_hit.colour.r * (1.0 - reflect)),
+                //             g = (min_hit.colour.g * reflect) + (bounce_hit.colour.g * (1.0 - reflect)),
+                //             b = (min_hit.colour.b * reflect) + (bounce_hit.colour.b * (1.0 - reflect))
+                //         ),
+                //         normal = normal
+                //     );
+                // }
+                // return new Hit(
+                //     did_hit = true,
+                //     colour = min_hit.colour,
+                //     normal = normal
+                // );
+
+
+                // matte material
+                var bounce_dir = randomVec3InHemisphere(normal);
+                var bounce_origin = ray.origin + ray.direction * min_dist;
+                var bounce_ray = new Ray(origin = bounce_origin, direction = bounce_dir);
+                bounce_ray.advance(0.01);
+                var bounce_hit = this.ray_march(bounce_ray, depth - 1);
+                return new Hit(
+                    did_hit = true,
+                    colour = new RGB(
+                        r = bounce_hit.colour.r * 0.5,
+                        g = bounce_hit.colour.g * 0.5,
+                        b = bounce_hit.colour.b * 0.5
+                    ),
+                    normal = normal
+                );
+
+                return new Hit(
+                    did_hit = true,
+                    colour = min_hit.colour,
+                    normal = normal
+                );
             }
 
             ray.advance(min_dist);
         }
 
-        // writeln("OUT OF STEPS : ", x, " : ", y);
-        render.colour.pixels[x, y] = Colour.LIGHT_BLUE;
+        var unit_dir = ray.direction;
+        unit_dir.normalise();
+        var a = (unit_dir.y + 1.0) / 2.0;
+        return new Hit(
+            did_hit = false,
+            colour = new RGB(
+                r = (1.0 - a) * 0.5,
+                g = (1.0 - a) * 0.7,
+                b = 1.0
+            ),
+            normal = new Vec3(0.0, 0.0, 0.0)
+        );
+    }
+
+    proc Scene.render(camera: Camera.Camera, width: uint, height: uint) : Render {
+        var colour = new Image(width, height);
+        var normal = new Image(width, height);
+        const samples = 5;
+        for x in 0..<width {
+            for y in 0..<height {
+                for s in 1..samples {
+                    // var ray = camera.ray(x, y, width, height);
+                    var ray = camera.slightly_random_ray(x, y, width, height);
+                    var hit = this.ray_march(ray, 15);
+                    colour.pixels[x, y] += (hit.colour / (samples: real));
+                    normal.pixels[x, y] += (new RGB(r = hit.normal.x, g = hit.normal.y, b = hit.normal.z) / (samples:real));
+                }
+                // var ray = camera.ray(x, y, width, height);
+                // var hit = this.ray_march(ray, 10);
+                // colour.pixels[x, y] = hit.colour;
+                // normal.pixels[x, y] = new RGB(r = hit.normal.x, g = hit.normal.y, b = hit.normal.z);
+                // // writeln("y = ", y);
+                // // writeln("hit = ", hit);
+            }
+            writeln("x = ", x);
+        }
+
+        return new Render(
+            colour = colour,
+            normal = normal
+        );
     }
 }
