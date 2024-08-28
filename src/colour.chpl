@@ -22,4 +22,17 @@ module Colour {
 
     const BLACK = new RGB(0.0, 0.0, 0.0);
     const LIGHT_BLUE = new RGB(0.5, 0.6, 1.0);
+    const RED = new RGB(1.0, 0.0, 0.0);
+    const GREEN = new RGB(0.0, 1.0, 0.0);
+    const BLUE = new RGB(0.0, 0.0, 1.0);
+    const YELLOW = new RGB(1.0, 1.0, 0.0);
+    const MAGENTA = new RGB(1.0, 0.0, 1.0);
+    const CYAN = new RGB(0.0, 1.0, 1.0);
+    const WHITE = new RGB(1.0, 1.0, 1.0);
+    const GREY = new RGB(0.5, 0.5, 0.5);
+    const ORANGE = new RGB(1.0, 0.5, 0.0);
+    const PURPLE = new RGB(0.5, 0.0, 0.5);
+    const PINK = new RGB(1.0, 0.5, 0.5);
+    const BROWN = new RGB(0.5, 0.25, 0.0);
+    const LIME = new RGB(0.6, 0.9, 0.2);
 }

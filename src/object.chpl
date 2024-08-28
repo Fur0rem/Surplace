@@ -30,19 +30,12 @@ module Object {
     }
 
     proc Object.distance(pos: Point) : real {
-        // map the the point to the object's space (scale, rotation, translation)
-        var translate = M4x4_translation(this.position);
-        var scale = M4x4_scale(this.scale);
-        var rotate = M4x4_rotation(this.rotation);
-        var transform = translate * scale * rotate;
-        transform = transform.inverse();
-        var p = pos * transform;
         select shape {
             when Shape.Sphere {
-                return Sphere_distance(p);
+                return Sphere_distance(pos);
             }
             when Shape.Cube {
-                return Cube_distance(p);
+                return Cube_distance(pos);
             }
         }
         // Unreachable
@@ -70,15 +63,40 @@ module Object {
     }
 
     proc Scene.ray_march(in ray: Ray, ref render: Render, x: uint, y: uint) {
-        param MAX_STEPS: uint = 100;
-        param MAX_DIST: real = 100.0;
+        param MAX_STEPS: uint = 500;
+        param MAX_DIST: real = 300.0;
         param EPS: real = 0.001;
 
         for i in 0..MAX_STEPS {
             var min_hit = this.objects[0];
-            var min_dist = 999.9;
+            var min_dist = MAX_DIST;
             for object in this.objects {
-                const dist = object.distance(ray.origin);
+
+                // map the the point to the object's space (scale, rotation, translation)
+                // FIXME: issue with coordinate system
+                var translate = M4x4_translation(object.position);
+                var scale = M4x4_scale(object.scale);
+                var rotate = M4x4_rotation(object.rotation);
+                var transform = translate * rotate * scale;
+                var inv_transform = transform.inverse();
+                var p = ray.origin * inv_transform;
+                const obj_dist = object.distance(p);
+                // Retransform back into the space of the camera
+                // Create a new ray transformed into the space of the object
+                var ray_obj = ray;
+                ray_obj.advance(obj_dist);
+
+                // Transform the ray back into the space of the camera
+
+                // Compute the distance between those two rays
+                var delta = ray.origin - ray_obj.origin;
+                delta = delta * scale;
+                const dist = delta.length();
+
+                if (x == render.colour.width / 2) && (y == render.colour.height / 2) && (i == 0) && (object == this.objects[1]) {
+                    writeln("objdist: ", obj_dist, " dist: ", dist);
+                }
+
                 if dist < min_dist {
                     min_hit = object;
                     min_dist = dist;
@@ -86,6 +104,7 @@ module Object {
             }
             if min_dist > MAX_DIST {
                 render.colour.pixels[x, y] = Colour.LIGHT_BLUE;
+                // writeln("OUT OF DIST");
                 return;
             }
             if min_dist < EPS {
@@ -100,6 +119,7 @@ module Object {
             ray.advance(min_dist);
         }
 
+        // writeln("OUT OF STEPS : ", x, " : ", y);
         render.colour.pixels[x, y] = Colour.LIGHT_BLUE;
     }
 }

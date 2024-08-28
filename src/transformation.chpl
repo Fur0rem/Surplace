@@ -174,4 +174,13 @@ module Transformation {
             z = vec.x * mat.m20 + vec.y * mat.m21 + vec.z * mat.m22 + mat.m23
         );
     }
+
+    operator * (mat: M4x4, vec: Vec3) : Vec3 {
+        // assume the fourth element of the vector is 1
+        return new Vec3(
+            x = vec.x * mat.m00 + vec.y * mat.m10 + vec.z * mat.m20 + mat.m30,
+            y = vec.x * mat.m01 + vec.y * mat.m11 + vec.z * mat.m21 + mat.m31,
+            z = vec.x * mat.m02 + vec.y * mat.m12 + vec.z * mat.m22 + mat.m32
+        );
+    }
 }
