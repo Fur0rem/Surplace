@@ -112,6 +112,15 @@ module Transformation {
         );
     }
 
+    proc M4x4_scale(scale: real) : M4x4 {
+        return new M4x4(
+            scale, 0.0, 0.0, 0.0,
+            0.0, scale, 0.0, 0.0,
+            0.0, 0.0, scale, 0.0,
+            0.0, 0.0, 0.0, 1.0
+        );
+    }
+
     proc M4x4_rotation(axis: Vec3, angle: real) : M4x4 {
         var halfAngle = angle / 2.0;
         var sinHalfAngle = sin(halfAngle);

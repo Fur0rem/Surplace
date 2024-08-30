@@ -29,7 +29,7 @@ module Camera {
         var ry = (1.0 - 2.0 * (y + 0.5) / height) * scale;
         var direction = this.direction + new Vec3(rx, ry, 1.0);
         direction.normalise();
-        const pixel_size = (1.0 / width:real) / 2;
+        const pixel_size = (1.0 / max(height,width)) / 16.0;
         var randomStream = new Random.randomStream(real);
         var random = new Vec3(
             x = randomStream.next(-pixel_size, pixel_size),

@@ -114,7 +114,7 @@ module Vector {
     }
 
     proc randomVec3InHemisphere(normal: Vec3) : Vec3 {
-        var inUnitSphere = randomVec3InUnitSphere();
+        var inUnitSphere = randomVec3Unit();
         if inUnitSphere.dot(normal) > 0.0 {
             return inUnitSphere;
         } else {

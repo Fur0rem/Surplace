@@ -8,8 +8,8 @@ import Ray.Ray;
 use Rendering;
 use Math;
 
-config const width: uint = 512;
-config const height: uint = 512;
+config const width: uint = 256;
+config const height: uint = 256;
 config const output_name: string = "renders/output_1";
 
 proc main() {
@@ -17,7 +17,7 @@ proc main() {
     // TODO: fix issue with coordinate system
     // For now : +Y = left, +X = down, +Z = forward
     var camera = new Camera(
-        origin = new Vec3(0.0, 0.0, -2.0),
+        origin = new Vec3(0.0, 0.0, -1.0),
         direction = new Vec3(0.0, 0.0, 1.0)
     );
     camera.direction.normalise();
@@ -25,7 +25,7 @@ proc main() {
     const obj1 = new Object(
         shape = Shape.Sphere,
         rotation = new Vec3(0.0, 0.0, 0.0),
-        scale = new Vec3(1.0, 1.0, 1.0),
+        scale = new Vec3(0.5, 1.0, 1.0),
         position = new Vec3(0.0, 0.0, 1.0),
         colour = Colour.RED
     );
@@ -33,8 +33,8 @@ proc main() {
     const obj2 = new Object(
         shape = Shape.Sphere,
         rotation = new Vec3(0.0,0.0,0.0),
-        scale = new Vec3(100.0, 100.0, 100.0),
-        position = new Vec3(50.5, 0.0, 1.0),
+        scale = new Vec3(200.0, 200.0, 200.0),
+        position = new Vec3(0.0, -100.5, 1.0),
         colour = Colour.LIME
     );
 
