@@ -37,6 +37,7 @@ module Rendering {
     record Render {
         var colour: Image;
         var normal: Image;
+        var time_taken: Image;
     }
 
     proc Render.save(dir_name: string) {
@@ -48,6 +49,7 @@ module Rendering {
         }
         colour.save(dir_name + "/colour.ppm");
         normal.save(dir_name + "/normal.ppm");
+        time_taken.save(dir_name + "/time_taken.ppm");
     }
 
 }

@@ -129,18 +129,18 @@ module Object {
                 const obj_dist = object.distance(p);
                 // Retransform back into the space of the camera
                 // Create a new ray transformed into the space of the object
-                // var ray_obj = ray;
-                // ray_obj.advance(obj_dist);
+                var ray_obj = ray;
+                ray_obj.advance(obj_dist);
 
-                // // Transform the ray back into the space of the camera
+                // Transform the ray back into the space of the camera
 
-                // // Compute the distance between those two rays
-                // var delta = ray.origin - ray_obj.origin;
-                // // var scale = M4x4_rotation(object.rotation);
-                // var scale = M4x4_scale(object.scale);
-                // delta = delta * scale;
-                // const dist = delta.length();
-                const dist = obj_dist * min(object.scale.x, min(object.scale.y, object.scale.z));
+                // Compute the distance between those two rays
+                var delta = ray.origin - ray_obj.origin;
+                // var scale = M4x4_rotation(object.rotation);
+                var scale = M4x4_scale(object.scale);
+                delta = delta * scale;
+                const dist = delta.length();
+                // const dist = obj_dist * min(object.scale.x, min(object.scale.y, object.scale.z));
 
                 if dist < min_dist {
                     min_hit = object;
@@ -156,9 +156,10 @@ module Object {
 
                 // matte material
                 var bounce_dir = randomVec3InHemisphere(normal);
+                // var bounce_dir = normal + randomVec3Unit();
                 var bounce_origin = ray.origin;
                 var bounce_ray = new Ray(origin = bounce_origin, direction = bounce_dir);
-                bounce_ray.advance(0.01);
+                bounce_ray.advance(0.005);
                 var bounce_hit = this.ray_march(bounce_ray, depth - 1);
                 return new Hit(
                     did_hit = true,
@@ -169,12 +170,23 @@ module Object {
                     ),
                     normal = normal
                 );
-
-                return new Hit(
-                    did_hit = true,
-                    colour = min_hit.colour,
-                    normal = normal
-                );
+                // var results: [1..3] Hit;
+                // const bounce_samples = vecs_in_hemisphere_uniform(normal, 3);
+                // for i in 1..3 {
+                //     var bounce_ray = new Ray(origin = ray.origin, direction = bounce_samples[i]);
+                //     bounce_ray.advance(0.005);
+                //     results[i] = this.ray_march(bounce_ray, depth - 1);
+                // }
+                // var colour = new RGB(0.0, 0.0, 0.0);
+                // for i in 1..3 {
+                //     colour += results[i].colour;
+                // }
+                // colour /= 3.0;
+                // return new Hit(
+                //     did_hit = true,
+                //     colour = colour,
+                //     normal = normal
+                // );
             }
 
             ray.advance(min_dist);
@@ -194,26 +206,28 @@ module Object {
     proc Scene.render(camera: Camera.Camera, width: uint, height: uint) : Render {
         var colour = new Image(width, height);
         var normal = new Image(width, height);
+        var times: [0..width, 0..height] real;
         var max_time_taken = 0.0;
-        const samples = 10;
         for x in 0..<width {
             for y in 0..<height {
-                for s in 1..samples {
-                    var chrono: stopwatch;
-                    chrono.start();
-                    var ray = camera.slightly_random_ray(y, x, width, height); // idk why i have to swap x and y
-                    var hit = this.ray_march(ray, 60);
-                    colour.pixels[x, y] += hit.colour / (samples: real);
+                var chrono: stopwatch;
+                chrono.start();
+                const samples = camera.n_random_rays(y, x, width, height, 20); // I don't know why I have to swap x and y
+                const nb_samples = samples.domain.size: real;
+                for ray in samples {
+                    var hit = this.ray_march(ray, 5);
+                    colour.pixels[x, y] += hit.colour / nb_samples;
                     normal.pixels[x, y] += new RGB(
                         r = (1.0 + hit.normal.x) / 2.0,
                         g = (1.0 + hit.normal.y) / 2.0,
                         b = (1.0 + hit.normal.z) / 2.0
-                    ) / (samples: real);
-                    var time_taken = chrono.elapsed();
-                    if time_taken > max_time_taken {
-                        max_time_taken = time_taken;
-                    }
+                    ) / nb_samples;
                 }
+                var time_taken = chrono.elapsed();
+                if time_taken > max_time_taken {
+                    max_time_taken = time_taken;
+                }
+                times[x, y] += time_taken;
                 // var ray = camera.ray(x, y, width, height);
                 // var hit = this.ray_march(ray, 10);
                 // colour.pixels[x, y] = hit.colour;
@@ -226,9 +240,34 @@ module Object {
 
         writeln("Max time taken: ", max_time_taken * 1000, " ms");
 
+        // normalise the time taken
+        for x in 0..<width {
+            for y in 0..<height {
+                times[x, y] /= max_time_taken;
+                if times[x, y] > 1.0 {
+                    times[x, y] = 1.0;
+                }
+            }
+        }
+
+        var time_image = new Image(width, height);
+        for x in 0..<width {
+            for y in 0..<height {
+                time_image.pixels[x, y] = new RGB(
+                    r = times[x, y],
+                    g = 0.0,
+                    b = 0.0
+                );
+                if times[x, y] > 0.9 {
+                    time_image.pixels[x, y].g = 1.0;
+                }
+            }
+        }
+
         return new Render(
             colour = colour,
-            normal = normal
+            normal = normal,
+            time_taken = time_image
         );
     }
 }

@@ -17,10 +17,8 @@ proc main() {
     // TODO: fix issue with coordinate system
     // For now : +Y = left, +X = down, +Z = forward
     var camera = new Camera(
-        origin = new Vec3(0.0, 0.0, -1.0),
-        direction = new Vec3(0.0, 0.0, 1.0)
+        origin = new Vec3(0.0, 0.0, -1.0)
     );
-    camera.direction.normalise();
 
     const obj1 = new Object(
         shape = Shape.Sphere,

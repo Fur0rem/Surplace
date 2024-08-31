@@ -122,5 +122,14 @@ module Vector {
         }
     }
 
+    proc vecs_in_hemisphere_uniform(normal: Vec3, nb_vecs: uint) : [] Vec3 {
+        var vecs: [1..nb_vecs] Vec3;
+        vecs[1] = normal;
+        for i in 2..nb_vecs {
+            vecs[i] = randomVec3InHemisphere(normal);
+        }
+        return vecs;
+    }
+
     type Point = Vec3;
 }
