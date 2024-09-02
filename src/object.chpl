@@ -82,12 +82,12 @@ module Object {
         // return vec;
     }
 
-    record Scene {
+    record LinearScene {
         var D: domain(1);
         var objects: [D] Object;
     }
 
-    proc Scene.init(objects: [?D] Object) {
+    proc LinearScene.init(objects: [?D] Object) {
         this.D = objects.domain;
         this.objects = objects;
     }
@@ -98,7 +98,7 @@ module Object {
         var normal: Vec3;
     }
 
-    proc Scene.ray_march(in ray: Ray, depth: uint) : Hit {
+    proc LinearScene.ray_march(in ray: Ray, depth: uint) : Hit {
         param MAX_STEPS: uint = 500;
         param MAX_DIST: real = 300.0;
         param EPS: real = 0.002;
@@ -154,22 +154,29 @@ module Object {
                 ray.advance(min_dist);
                 var normal = min_hit.normal(ray.origin);
 
-                // matte material
-                var bounce_dir = randomVec3InHemisphere(normal);
-                // var bounce_dir = normal + randomVec3Unit();
-                var bounce_origin = ray.origin;
-                var bounce_ray = new Ray(origin = bounce_origin, direction = bounce_dir);
-                bounce_ray.advance(0.005);
-                var bounce_hit = this.ray_march(bounce_ray, depth - 1);
+                // // matte material
+                // var bounce_dir = randomVec3InHemisphere(normal);
+                // // var bounce_dir = normal + randomVec3Unit();
+                // var bounce_origin = ray.origin;
+                // var bounce_ray = new Ray(origin = bounce_origin, direction = bounce_dir);
+                // bounce_ray.advance(0.005);
+                // var bounce_hit = this.ray_march(bounce_ray, depth - 1);
+                // return new Hit(
+                //     did_hit = true,
+                //     colour = new RGB(
+                //         r = bounce_hit.colour.r * 0.5,
+                //         g = bounce_hit.colour.g * 0.5,
+                //         b = bounce_hit.colour.b * 0.5
+                //     ),
+                //     normal = normal
+                // );
+
                 return new Hit(
                     did_hit = true,
-                    colour = new RGB(
-                        r = bounce_hit.colour.r * 0.5,
-                        g = bounce_hit.colour.g * 0.5,
-                        b = bounce_hit.colour.b * 0.5
-                    ),
+                    colour = min_hit.colour,
                     normal = normal
                 );
+
                 // var results: [1..3] Hit;
                 // const bounce_samples = vecs_in_hemisphere_uniform(normal, 3);
                 // for i in 1..3 {
@@ -192,18 +199,10 @@ module Object {
             ray.advance(min_dist);
         }
 
-        var unit_dir = ray.direction;
-        unit_dir.normalise();
-        var a = (unit_dir.y + 1.0) / 2.0;
-        var colour = (1.0 - a) * Colour.WHITE + a * (new RGB(r = 0.5, g = 0.7, b = 1.0));
-        return new Hit(
-            did_hit = false,
-            colour = colour,
-            normal = new Vec3(0.0, 0.0, 0.0)
-        );
+        return no_hit;
     }
 
-    proc Scene.render(camera: Camera.Camera, width: uint, height: uint) : Render {
+    proc LinearScene.render(camera: Camera.Camera, width: uint, height: uint) : Render {
         var colour = new Image(width, height);
         var normal = new Image(width, height);
         var times: [0..width, 0..height] real;
@@ -212,7 +211,7 @@ module Object {
             for y in 0..<height {
                 var chrono: stopwatch;
                 chrono.start();
-                const samples = camera.n_random_rays(y, x, width, height, 20); // I don't know why I have to swap x and y
+                const samples = camera.one_ray(y, x, width, height); // I don't know why I have to swap x and y
                 const nb_samples = samples.domain.size: real;
                 for ray in samples {
                     var hit = this.ray_march(ray, 5);

@@ -7,6 +7,7 @@ use Object;
 import Ray.Ray;
 use Rendering;
 use Math;
+use SceneModule;
 
 config const width: uint = 256;
 config const height: uint = 256;
@@ -36,7 +37,21 @@ proc main() {
         colour = Colour.LIME
     );
 
-    const scene = new Scene(objects = [obj1, obj2]);
+    var leaf1 = Leaf(obj1);
+    var leaf2 = Leaf(obj2);
+    var leaf3 = Leaf(obj2);
+    var op = SmoothUnion(0.5);
+    var op2 = SmoothUnion(1.0);
+    var node1 = Node(op2, leaf2, leaf3);
+    var node = Node(op, leaf1, node1);
+
+    if node.isANode() {
+        writeln("Operation: ", node.getOperation().tag);
+        writeln("Node with left value: ", node.getLeft()!.getLeafValue());
+        writeln("Node with right value: ", node.getRight()!.getOperation());
+    }
+
+    const scene = new LinearScene(objects = [obj1, obj2]);
 
     const renderedimage = scene.render(camera, width, height);
 
