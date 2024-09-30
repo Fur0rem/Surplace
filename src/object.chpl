@@ -16,23 +16,24 @@ module Object {
         var shape: Shape;
         var position: Point;
         var scale: Vec3;
-        // var scale: real;
+        // var scale: real(64);
         var rotation: Vec3;
         var colour: Colour.RGB;
     }
 
     // Diameter of sphere is 1
-    proc Sphere_distance(p: Point) : real {
+    proc Sphere_distance(p: Point) : real(64) {
+        // writeln("COmputing distance for sphere at ", p);
         return p.length() - 0.5;
     }
 
     // Cube of side length 1 and centered at (0, 0, 0)
-    proc Cube_distance(p: Point) : real {
+    proc Cube_distance(p: Point) : real(64) {
         var q = p.abs() - 0.5;
         return max(max(q.x, q.y), q.z);
     }
 
-    proc Object.distance(pos: Point) : real {
+    proc Object.distance(pos: Point) : real(64) {
         select shape {
             when Shape.Sphere {
                 return Sphere_distance(pos);
@@ -52,10 +53,13 @@ module Object {
         var rotate = M4x4_rotation(this.rotation);
         var transform = translate * rotate * scale;
         var inv_transform = transform.inverse();
+        // writeln("transform = ", transform);
+        // writeln("inv_transform = ", inv_transform);
+        // writeln("p * inv_transform = ", p * inv_transform);
         return p * inv_transform;
     }
 
-    proc Object.distance_mapped(pos: Point) : real {
+    proc Object.distance_mapped(pos: Point) : real(64) {
         var p = this.map_point(pos);
         var dist = this.distance(p);
         // return dist * (this.scale.x + this.scale.y + this.scale.z) / 3.0; // this is probably wrong lol, i hate scaling that's not uniform
@@ -64,7 +68,7 @@ module Object {
 
     proc Object.normal(p: Point) : Vec3 {
         // Usual normal calculation
-        const EPS: real = 0.002;
+        const EPS: real(64) = 0.002;
         
         // map the the point to the object's space (scale, rotation, translation)
         const x = this.distance_mapped(new Point(p.x + EPS, p.y, p.z)) - this.distance_mapped(new Point(p.x - EPS, p.y, p.z));
@@ -95,13 +99,15 @@ module Object {
     record Hit {
         var did_hit: bool;
         var colour: Colour.RGB;
+        var steps_taken: uint;
         var normal: Vec3;
     }
 
+    param MAX_STEPS: uint = 400;
+    param MAX_DIST: real(64) = 300.0;
+    param EPS: real(64) = 0.002;
+
     proc LinearScene.ray_march(in ray: Ray, depth: uint) : Hit {
-        param MAX_STEPS: uint = 500;
-        param MAX_DIST: real = 300.0;
-        param EPS: real = 0.002;
 
         const no_hit = new Hit(
             did_hit = false,
@@ -205,14 +211,14 @@ module Object {
     proc LinearScene.render(camera: Camera.Camera, width: uint, height: uint) : Render {
         var colour = new Image(width, height);
         var normal = new Image(width, height);
-        var times: [0..width, 0..height] real;
+        var times: [0..width, 0..height] real(64);
         var max_time_taken = 0.0;
         for x in 0..<width {
             for y in 0..<height {
                 var chrono: stopwatch;
                 chrono.start();
                 const samples = camera.one_ray(y, x, width, height); // I don't know why I have to swap x and y
-                const nb_samples = samples.domain.size: real;
+                const nb_samples = samples.domain.size: real(64);
                 for ray in samples {
                     var hit = this.ray_march(ray, 5);
                     colour.pixels[x, y] += hit.colour / nb_samples;

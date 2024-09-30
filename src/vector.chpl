@@ -3,9 +3,9 @@ module Vector {
     import Random;
 
     record Vec3 {
-        var x: real;
-        var y: real;
-        var z: real;
+        var x: real(64);
+        var y: real(64);
+        var z: real(64);
     }
 
     operator + (a: Vec3, b: Vec3) : Vec3 {
@@ -16,11 +16,11 @@ module Vector {
         return new Vec3(a.x - b.x, a.y - b.y, a.z - b.z);
     }
 
-    operator * (a: Vec3, b: real) : Vec3 {
+    operator * (a: Vec3, b: real(64)) : Vec3 {
         return new Vec3(a.x * b, a.y * b, a.z * b);
     }
 
-    operator * (a: real, b: Vec3) : Vec3 {
+    operator * (a: real(64), b: Vec3) : Vec3 {
         return new Vec3(a * b.x, a * b.y, a * b.z);
     }
 
@@ -28,27 +28,27 @@ module Vector {
         return new Vec3(-a.x, -a.y, -a.z);
     }
 
-    operator + (v: Vec3, b: real) : Vec3 {
+    operator + (v: Vec3, b: real(64)) : Vec3 {
         return new Vec3(v.x + b, v.y + b, v.z + b);
     }
 
-    operator - (v: Vec3, b: real) : Vec3 {
+    operator - (v: Vec3, b: real(64)) : Vec3 {
         return new Vec3(v.x - b, v.y - b, v.z - b);
     }
 
-    operator / (v: Vec3, b: real) : Vec3 {
+    operator / (v: Vec3, b: real(64)) : Vec3 {
         return new Vec3(v.x / b, v.y / b, v.z / b);
     }
 
-    proc Vec3.length_squared() : real {
+    proc Vec3.length_squared() : real(64) {
         return x**2 + y**2 + z**2;
     }
 
-    proc Vec3.length() : real {
+    proc Vec3.length() : real(64) {
         return sqrt(this.length_squared());
     }
 
-    proc Vec3.dot(other: Vec3) : real {
+    proc Vec3.dot(other: Vec3) : real(64) {
         return this.x * other.x 
                 + this.y * other.y 
                 + this.z * other.z;
@@ -79,7 +79,7 @@ module Vector {
     }
 
     proc randomVec3() : Vec3 {
-        var randStream = new Random.randomStream(real);
+        var randStream = new Random.randomStream(real(64));
         return new Vec3(
             x = randStream.next(),
             y = randStream.next(),
@@ -87,8 +87,8 @@ module Vector {
         );
     }
 
-    proc randomVec3(min: real, max: real) : Vec3 {
-        var randStream = new Random.randomStream(real);
+    proc randomVec3(min: real(64), max: real(64)) : Vec3 {
+        var randStream = new Random.randomStream(real(64));
         return new Vec3(
             x = randStream.next(min, max),
             y = randStream.next(min, max),

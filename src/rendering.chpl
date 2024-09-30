@@ -37,6 +37,7 @@ module Rendering {
     record Render {
         var colour: Image;
         var normal: Image;
+        var ambient_occlusion: Image;
         var time_taken: Image;
     }
 
@@ -49,6 +50,7 @@ module Rendering {
         }
         colour.save(dir_name + "/colour.ppm");
         normal.save(dir_name + "/normal.ppm");
+        ambient_occlusion.save(dir_name + "/ambient_occlusion.ppm");
         time_taken.save(dir_name + "/time_taken.ppm");
     }
 

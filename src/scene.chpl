@@ -20,7 +20,7 @@ module SceneModule {
         var unioned: nothing;
         var intersection: nothing;
         var difference: nothing;
-        var smoothUnion: real;
+        var smoothUnion: real(64);
     }
 
     record Operation {
@@ -28,7 +28,7 @@ module SceneModule {
         var value: OperationValue;
     }
 
-    proc SmoothUnion(k: real): Operation {
+    proc SmoothUnion(k: real(64)): Operation {
         var value = new OperationValue();
         value.smoothUnion = k;
         return new Operation(tag = OperationTag.SmoothUnion, value = value);   
@@ -128,13 +128,15 @@ module SceneModule {
         return new SceneNode(op, left, right);
     }
 
-    proc SceneNode.distance(ray : Ray): (real, RGB) {
+    proc SceneNode.distance(ray : Ray): (real(64), RGB) {
         if this.isLeaf {
             const object = this.value.leaf;
             const p = object.map_point(ray.origin);
             const obj_dist = object.distance(p);
+            // writeln("obj: ", object, " ||| ray: ", ray, " ||| map: ", p, " ||| dist: ", obj_dist, "\n");
             var ray_obj = ray;
             ray_obj.advance(obj_dist);
+            // writeln("ray_obj: ", ray_obj, "\n");
 
             // Transform the ray back into the space of the camera
 
@@ -217,22 +219,37 @@ module SceneModule {
         return (+inf, Colour.BLACK);
     }
 
+    proc SceneNode.normal(in r: Ray) : Vec3 {
+        // Usual normal calculation
+        const EPS: real(64) = 0.000001;
+        
+        const (x, _) = this.distance(new Ray(origin = r.origin + new Vec3(EPS,0.0,0.0), direction = r.direction)) - this.distance(new Ray(origin = r.origin - new Vec3(EPS,0.0,0.0), direction = r.direction));
+        const (y, _) = this.distance(new Ray(origin = r.origin + new Vec3(0.0,EPS,0.0), direction = r.direction)) - this.distance(new Ray(origin = r.origin - new Vec3(0.0,EPS,0.0), direction = r.direction));
+        const (z, _) = this.distance(new Ray(origin = r.origin + new Vec3(0.0,0.0,EPS), direction = r.direction)) - this.distance(new Ray(origin = r.origin - new Vec3(0.0,0.0,EPS), direction = r.direction));
+
+        var vec = new Vec3(x, y, z);
+        vec.normalise();
+        return vec;
+    }
+
     proc SceneNode.ray_march(in ray: Ray, depth: uint) : Hit {
         param MAX_STEPS: uint = 500;
-        param MAX_DIST: real = 300.0;
-        param EPS: real = 0.002;
+        param MAX_DIST: real(64) = 300.0;
+        param EPS: real(64) = 0.002;
 
         const no_hit = new Hit(
             did_hit = false,
             colour = Colour.LIGHT_BLUE,
-            normal = new Vec3(0.0, 0.0, 0.0)
+            normal = new Vec3(0.0, 0.0, 0.0),
+            steps_taken = MAX_STEPS
         );
 
         if depth == 0 {
             return new Hit(
                 did_hit = false,
                 colour = Colour.BLACK,
-                normal = new Vec3(0.0, 0.0, 0.0)
+                normal = new Vec3(0.0, 0.0, 0.0),
+                steps_taken = 0
             );
         } 
 
@@ -243,12 +260,15 @@ module SceneModule {
                 return no_hit;
             }
             if min_dist < EPS {
-                ray.advance(min_dist);
+                // ray.advance(min_dist); // <- breaks normals
                 // var normal = min_hit.normal(ray.origin);
+
+
                 return new Hit(
                     did_hit = true,
                     colour = col,
-                    normal = new Vec3(0.0, 0.0, 0.0)
+                    normal = this.normal(ray),
+                    steps_taken = i
                 );
 
                 // var results: [1..3] Hit;
@@ -279,14 +299,15 @@ module SceneModule {
     proc SceneNode.render(camera: Camera.Camera, width: uint, height: uint) : Render {
         var colour = new Image(width, height);
         var normal = new Image(width, height);
-        var times: [0..width, 0..height] real;
+        var times: [0..width, 0..height] real(64);
+        var amb_occ = new Image(width, height);
         var max_time_taken = 0.0;
         for x in 0..<width {
             for y in 0..<height {
                 var chrono: stopwatch;
                 chrono.start();
                 const samples = camera.one_ray(y, x, width, height); // I don't know why I have to swap x and y
-                const nb_samples = samples.domain.size: real;
+                const nb_samples = samples.domain.size: real(64);
                 for ray in samples {
                     var hit = this.ray_march(ray, 5);
                     colour.pixels[x, y] += hit.colour / nb_samples;
@@ -295,12 +316,15 @@ module SceneModule {
                         g = (1.0 + hit.normal.y) / 2.0,
                         b = (1.0 + hit.normal.z) / 2.0
                     ) / nb_samples;
+                    param STRENGTH = 5.0;
+                    amb_occ.pixels[x, y] = Colour.WHITE - ((Colour.WHITE * hit.steps_taken) / (MAX_STEPS / STRENGTH));
+                    amb_occ.pixels[x, y] = max(amb_occ.pixels[x, y], Colour.BLACK);
                 }
                 var time_taken = chrono.elapsed();
                 if time_taken > max_time_taken {
                     max_time_taken = time_taken;
                 }
-                times[x, y] += time_taken;
+                times[x, y] = time_taken;
                 // var ray = camera.ray(x, y, width, height);
                 // var hit = this.ray_march(ray, 10);
                 // colour.pixels[x, y] = hit.colour;
@@ -308,10 +332,18 @@ module SceneModule {
                 // // writeln("y = ", y);
                 // // writeln("hit = ", hit);
             }
-            writeln("x = ", x);
+            // writeln("x = ", x);
         }
 
-        writeln("Max time taken: ", max_time_taken * 1000, " ms");
+        writeln("Max time taken: ", max_time_taken * 1000000, " us");
+
+        var sum_of_time = 0.0;
+        for x in 0..<width {
+            for y in 0..<height {
+                sum_of_time += times[x, y];
+            }
+        }
+        writeln("Average time : ", (sum_of_time / (width*height)) * 1_000_000, " us");
 
         // normalise the time taken
         for x in 0..<width {
@@ -340,7 +372,8 @@ module SceneModule {
         return new Render(
             colour = colour,
             normal = normal,
-            time_taken = time_image
+            time_taken = time_image,
+            ambient_occlusion = amb_occ
         );
     }
 }

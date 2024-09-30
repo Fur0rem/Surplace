@@ -4,17 +4,17 @@ module Transformation {
     use Math;
 
     record Quaterion {
-        var x: real;
-        var y: real;
-        var z: real;
-        var w: real;
+        var x: real(64);
+        var y: real(64);
+        var z: real(64);
+        var w: real(64);
     }
 
     proc Quaterion_identity() : Quaterion {
         return new Quaterion(0.0, 0.0, 0.0, 1.0);
     }
 
-    proc Quaterion_rotation(axis: Vec3, angle: real) : Quaterion {
+    proc Quaterion_rotation(axis: Vec3, angle: real(64)) : Quaterion {
         var halfAngle = angle / 2.0;
         var sinHalfAngle = sin(halfAngle);
         return new Quaterion(
@@ -41,22 +41,22 @@ module Transformation {
     }
 
     record M4x4 {
-        var m00: real;
-        var m01: real;
-        var m02: real;
-        var m03: real;
-        var m10: real;
-        var m11: real;
-        var m12: real;
-        var m13: real;
-        var m20: real;
-        var m21: real;
-        var m22: real;
-        var m23: real;
-        var m30: real;
-        var m31: real;
-        var m32: real;
-        var m33: real;
+        var m00: real(64);
+        var m01: real(64);
+        var m02: real(64);
+        var m03: real(64);
+        var m10: real(64);
+        var m11: real(64);
+        var m12: real(64);
+        var m13: real(64);
+        var m20: real(64);
+        var m21: real(64);
+        var m22: real(64);
+        var m23: real(64);
+        var m30: real(64);
+        var m31: real(64);
+        var m32: real(64);
+        var m33: real(64);
     }
 
     proc M4x4_identity() : M4x4 {
@@ -73,6 +73,7 @@ module Transformation {
                 - m01 * (m10 * m22 * m33 + m12 * m23 * m30 + m13 * m20 * m32 - m13 * m22 * m30 - m10 * m23 * m32 - m12 * m20 * m33)
                 + m02 * (m10 * m21 * m33 + m11 * m23 * m30 + m13 * m20 * m31 - m13 * m21 * m30 - m10 * m23 * m31 - m11 * m20 * m33)
                 - m03 * (m10 * m21 * m32 + m11 * m22 * m30 + m12 * m20 * m31 - m12 * m21 * m30 - m10 * m22 * m31 - m11 * m20 * m32);
+        // writeln("det= ", det);
         var invDet = 1.0 / det;
         return new M4x4(
             (m11 * m22 * m33 + m12 * m23 * m31 + m13 * m21 * m32 - m13 * m22 * m31 - m11 * m23 * m32 - m12 * m21 * m33) * invDet,
@@ -112,7 +113,7 @@ module Transformation {
         );
     }
 
-    proc M4x4_scale(scale: real) : M4x4 {
+    proc M4x4_scale(scale: real(64)) : M4x4 {
         return new M4x4(
             scale, 0.0, 0.0, 0.0,
             0.0, scale, 0.0, 0.0,
@@ -121,7 +122,7 @@ module Transformation {
         );
     }
 
-    proc M4x4_rotation(axis: Vec3, angle: real) : M4x4 {
+    proc M4x4_rotation(axis: Vec3, angle: real(64)) : M4x4 {
         var halfAngle = angle / 2.0;
         var sinHalfAngle = sin(halfAngle);
         var cosHalfAngle = cos(halfAngle);

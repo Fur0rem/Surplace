@@ -9,8 +9,8 @@ module Camera {
         var origin: Vec3;
     }
 
-    proc Camera.ray(x: uint, y: real, width: uint, height: uint) : Ray {
-        var aspect_ratio = width:real / height:real;
+    proc Camera.ray(x: uint, y: real(64), width: uint, height: uint) : Ray {
+        var aspect_ratio = width:real(64) / height:real(64);
         var fov = 90.0;
         var scale = tan(fov * pi / 360.0);
         var rx = (2.0 * (x + 0.5) / width - 1.0) * aspect_ratio * scale;
@@ -21,20 +21,20 @@ module Camera {
         return ray;
     }
 
-    // proc Camera.delta_x(width: uint) : real {
+    // proc Camera.delta_x(width: uint) : real(64) {
     //     var ray_at_0 = this.ray_unnormalised(0, 0, width, 1);
     //     var ray_at_1 = this.ray_unnormalised(1, 0, width, 1);
     //     return (ray_at_1.origin - ray_at_0.origin).length();
     // }
 
-    // proc Camera.delta_y(height: uint) : real {
+    // proc Camera.delta_y(height: uint) : real(64) {
     //     var ray_at_0 = this.ray_unnormalised(0, 0, 1, height);
     //     var ray_at_1 = this.ray_unnormalised(0, 1, 1, height);
     //     return (ray_at_1.origin - ray_at_0.origin).length();
     // }
 
     proc Camera.slightly_random_ray(x: uint, y: uint, width: uint, height: uint) : Ray {
-        var rand = new Random.randomStream(real);
+        var rand = new Random.randomStream(real(64));
         var rx = (2.0 * (x + rand.next(-0.5, 0.5)) / width - 1.0);
         var ry = (1.0 - 2.0 * (y + rand.next(-0.5, 0.5)) / height);
         var direction = new Vec3(rx, ry, 1.0);

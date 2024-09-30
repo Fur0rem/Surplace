@@ -3,9 +3,9 @@ module Colour {
     import IO;
 
     record RGB {
-        var r: real;
-        var g: real;
-        var b: real;
+        var r: real(64);
+        var g: real(64);
+        var b: real(64);
     }
 
     proc RGB.print(stream) {
@@ -40,15 +40,15 @@ module Colour {
         a.b -= b.b;
     }
 
-    operator * (a: RGB, b: real) : RGB {
+    operator * (a: RGB, b: real(64)) : RGB {
         return new RGB(a.r * b, a.g * b, a.b * b);
     }
 
-    operator * (a: real, b: RGB) : RGB {
+    operator * (a: real(64), b: RGB) : RGB {
         return new RGB(a * b.r, a * b.g, a * b.b);
     }
 
-    operator / (a: RGB, b: real) : RGB {
+    operator / (a: RGB, b: real(64)) : RGB {
         return new RGB(a.r / b, a.g / b, a.b / b);
     }
 
