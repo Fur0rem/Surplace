@@ -9,8 +9,8 @@ use Rendering;
 use Math;
 use SceneModule;
 
-config const width: uint = 256;
-config const height: uint = 256;
+config const width: uint = 512;
+config const height: uint = 512;
 config const output_name: string = "renders/output_1";
 
 proc main() {
@@ -37,21 +37,44 @@ proc main() {
         colour = Colour.LIME
     );
 
+    const obj3 = new Object(
+        shape = Shape.Cube,
+        rotation = new Vec3(1.0, 0.0, 0.0),
+        scale = new Vec3(1.0, 1.0, 1.0),
+        position = new Vec3(0.8, 0.0, 1.0),
+        colour = Colour.BLUE
+    );
+
+    // const obj1 = new Object(
+    //     shape = Shape.Sphere,
+    //     rotation = new Vec3(0.0,0.0,0.0),
+    //     scale = new Vec3(200.0, 200.0, 200.0),
+    //     position = new Vec3(0.0, -101.0, -3.0),
+    //     colour = Colour.RED
+    // );
+
     var leaf1 = Leaf(obj1);
     var leaf2 = Leaf(obj2);
-    var leaf3 = Leaf(obj2);
-    var op = SmoothUnion(0.5);
-    var op2 = SmoothUnion(1.0);
+    var leaf3 = Leaf(obj3);
+    var op = SmoothUnion(1.2);
+    var op2 = SmoothUnion(0.5);
     var node1 = Node(op2, leaf2, leaf3);
     var node = Node(op, leaf1, node1);
 
-    if node.isANode() {
-        writeln("Operation: ", node.getOperation().tag);
-        writeln("Node with left value: ", node.getLeft()!.getLeafValue());
-        writeln("Node with right value: ", node.getRight()!.getOperation());
-    }
+    // var leaf1 = Leaf(obj1);
+    // var leaf2 = Leaf(obj2);
+    // var op = SmoothUnion(1.0);
+    // var node = Node(op, leaf1, leaf2);
 
-    const scene = new LinearScene(objects = [obj1, obj2]);
+    // if node.isANode() {
+    //     writeln("Operation: ", node.getOperation().tag);
+    //     writeln("Node with left value: ", node.getLeft()!.getLeafValue());
+    //     writeln("Node with right value: ", node.getRight()!.getLeafValue());
+    // }
+    // writeln("going to ray march now");
+
+    // const scene = new LinearScene(objects = [obj1, obj2]);
+    const scene = node;
 
     const renderedimage = scene.render(camera, width, height);
 
