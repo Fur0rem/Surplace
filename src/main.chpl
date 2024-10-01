@@ -21,17 +21,19 @@ proc main() {
         origin = new Vec3(0.0, 0.0, -1.0)
     );
 
-    /*{
-        const obj1 = new Object(
-            shape = Shape.Sphere,
+    {
+        var obj1 = new Object(
+            shape_tag = ShapeTag.Mandelbulb,
+            shape_value = new ShapeValue(),
             rotation = new Vec3(0.0, 0.0, 0.0),
             scale = new Vec3(0.5, 1.0, 1.0),
-            position = new Vec3(0.0, 0.0, 1.0),
+            position = new Vec3(-0.3, 0.0, 1.0),
             colour = Colour.RED
         );
+        obj1.shape_value.mandelbulb = (100, 8.0);
 
         const obj2 = new Object(
-            shape = Shape.Sphere,
+            shape_tag = ShapeTag.Sphere,
             rotation = new Vec3(0.0,0.0,0.0),
             scale = new Vec3(200.0, 200.0, 200.0),
             position = new Vec3(0.0, -100.5, 1.0),
@@ -39,7 +41,7 @@ proc main() {
         );
 
         const obj3 = new Object(
-            shape = Shape.Cube,
+            shape_tag = ShapeTag.Cube,
             rotation = new Vec3(1.0, 0.0, 0.0),
             scale = new Vec3(1.0, 1.0, 1.0),
             position = new Vec3(0.8, 0.0, 1.0),
@@ -47,7 +49,7 @@ proc main() {
         );
 
         // const obj1 = new Object(
-        //     shape = Shape.Sphere,
+        //     shape_tag = ShapeTag.Sphere,
         //     rotation = new Vec3(0.0,0.0,0.0),
         //     scale = new Vec3(200.0, 200.0, 200.0),
         //     position = new Vec3(0.0, -101.0, -3.0),
@@ -57,8 +59,8 @@ proc main() {
         var leaf1 = Leaf(obj1);
         var leaf2 = Leaf(obj2);
         var leaf3 = Leaf(obj3);
-        var op = SmoothUnion(1.2);
-        var op2 = SmoothUnion(0.5);
+        var op = SmoothUnion(0.1);
+        var op2 = SmoothUnion(0.2);
         var node1 = Node(op2, leaf2, leaf3);
         var node = Node(op, leaf1, node1);
 
@@ -80,25 +82,25 @@ proc main() {
         const renderedimage = scene.render(camera, width, height);
 
         renderedimage.save(output_name);
-    }*/
+    }
 
     {
         const obj1 = new Object(
-            shape = Shape.Sphere,
+            shape_tag = ShapeTag.Sphere,
             rotation = new Vec3(0.0,0.0,0.0),
             scale = new Vec3(1.1, 1.2, 1.1),
             position = new Vec3(0.0, 0.05, 1.0),
             colour = Colour.WHITE
         );
         const obj2 = new Object(
-            shape = Shape.Sphere,
+            shape_tag = ShapeTag.Sphere,
             rotation = new Vec3(0.0,0.0,0.0),
             scale = new Vec3(0.5, 0.4, 0.5),
             position = new Vec3(0.0, -0.7, 1.0),
             colour = Colour.LIGHT_BLUE
         );
         const obj3 = new Object(
-            shape = Shape.Sphere,
+            shape_tag = ShapeTag.Sphere,
             rotation = new Vec3(0.0,0.0,0.0),
             scale = new Vec3(0.1, 0.05, 0.1),
             position = new Vec3(0.0, -0.92, 1.0),
@@ -131,7 +133,7 @@ proc main() {
 
     // {
     //     var test = new Object(
-    //         shape = Shape.Sphere,
+    //         shape_tag = ShapeTag.Sphere,
     //         rotation = new Vec3(0.0, 0.0, 0.0),
     //         scale = new Vec3(0.5, 0.5, 0.5),
     //         position = new Vec3(0.0, 0.0, -7.0),
@@ -141,7 +143,7 @@ proc main() {
     //     writeln(p);
 
     //     test = new Object(
-    //         shape = Shape.Cube,
+    //         shape_tag = ShapeTag.Cube,
     //         rotation = new Vec3(0.0, 0.0, 0.0),
     //         scale = new Vec3(1.1, 1.2, 1.1),
     //         position = new Vec3(0.0, 0.05, -7.0),

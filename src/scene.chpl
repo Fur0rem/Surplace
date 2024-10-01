@@ -221,7 +221,7 @@ module SceneModule {
 
     proc SceneNode.normal(in r: Ray) : Vec3 {
         // Usual normal calculation
-        const EPS: real(64) = 0.000001;
+        const EPS: real(64) = 0.0000000001;
         
         const (x, _) = this.distance(new Ray(origin = r.origin + new Vec3(EPS,0.0,0.0), direction = r.direction)) - this.distance(new Ray(origin = r.origin - new Vec3(EPS,0.0,0.0), direction = r.direction));
         const (y, _) = this.distance(new Ray(origin = r.origin + new Vec3(0.0,EPS,0.0), direction = r.direction)) - this.distance(new Ray(origin = r.origin - new Vec3(0.0,EPS,0.0), direction = r.direction));

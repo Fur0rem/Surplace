@@ -6,14 +6,23 @@ module Object {
     use Rendering;
     import Camera;
     use Time;
+    use Math;
 
-    enum Shape {
+    enum ShapeTag {
         Sphere,
         Cube,
+        Mandelbulb
+    }
+
+    union ShapeValue {
+        var sphere: nothing;
+        var cube: nothing;
+        var mandelbulb: (uint, real(64));
     }
 
     record Object {
-        var shape: Shape;
+        var shape_tag: ShapeTag;
+        var shape_value: ShapeValue;
         var position: Point;
         var scale: Vec3;
         // var scale: real(64);
@@ -33,13 +42,80 @@ module Object {
         return max(max(q.x, q.y), q.z);
     }
 
+    /*
+    Shape::Mandelbulb { iterations, power } => {
+        let mut z = point;
+        let mut dr = 1.0;
+        let mut r = 0.0;
+
+        for _ in 0..iterations {
+            r = z.length();
+            if r > 2.0 {
+                break;
+            }
+
+            // Convert to polar coordinates
+            let mut theta = (z.z / r).acos();
+            let mut phi = z.y.atan2(z.x);
+            dr = r.powf(power - 1.0) * power * dr + 1.0;
+
+            // Scale and rotate the point
+            let zr = r.powf(power);
+            theta *= power;
+            phi *= power;
+
+            // Convert back to cartesian coordinates
+            z = Vec3 {
+                x: zr * theta.sin() * phi.cos(),
+                y: zr * theta.sin() * phi.sin(),
+                z: zr * theta.cos(),
+            } + point;
+
+            z = z * self.scale;
+        }
+
+        0.5 * r.ln() * r / dr
+    */
+    proc Mandelbulb_distance(p: Point, nb_it: uint, power: real(64)) : real(64) {
+        var z = p;
+        var dr = 1.0;
+        var r = 0.0;
+
+        for x in 1..nb_it {
+            r = z.length();
+            if (r > 2.0) {
+                break;
+            }
+
+            var theta = acos(z.z / r);
+            var phi = atan2(z.y, z.x);
+            dr = (r ** (power - 1.0)) * power * dr + 1.0;
+
+            var zr = r**power;
+            theta *= power;
+            phi *= power;
+            
+            z = new Vec3(
+                x = zr * sin(theta) * cos(phi),
+                y = zr * sin(theta) * sin(phi),
+                z = zr * cos(theta)
+            ) + p;
+        }
+
+        return (0.5 * ln(r) * r) / dr;
+    }
+
     proc Object.distance(pos: Point) : real(64) {
-        select shape {
-            when Shape.Sphere {
+        select this.shape_tag {
+            when ShapeTag.Sphere {
                 return Sphere_distance(pos);
             }
-            when Shape.Cube {
+            when ShapeTag.Cube {
                 return Cube_distance(pos);
+            }
+            when ShapeTag.Mandelbulb {
+                const (iterations, power) = this.shape_value.mandelbulb;
+                return Mandelbulb_distance(pos, iterations, power);
             }
         }
         // Unreachable
