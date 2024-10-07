@@ -7,6 +7,7 @@ module Object {
     import Camera;
     use Time;
     use Math;
+    use MaterialModule;
 
     enum ShapeTag {
         Sphere,
@@ -27,7 +28,8 @@ module Object {
         var scale: Vec3;
         // var scale: real(64);
         var rotation: Vec3;
-        var colour: Colour.RGB;
+        var material: Material;
+        var ignored: bool;
     }
 
     // Diameter of sphere is 1
@@ -106,6 +108,10 @@ module Object {
     }
 
     proc Object.distance(pos: Point) : real(64) {
+        if (this.ignored) {
+            return 99999; // can't put +inf otherwise minimum will fail or some shit, fuck floats
+        }
+        
         select this.shape_tag {
             when ShapeTag.Sphere {
                 return Sphere_distance(pos);
@@ -177,6 +183,16 @@ module Object {
         var colour: Colour.RGB;
         var steps_taken: uint;
         var normal: Vec3;
+        var alpha_acc: real(64);
+    }
+
+    proc ref Hit.hit_after_transparent(mat: Material) {
+        // blend the colours
+        this.colour = this.colour * this.alpha_acc + mat.col * (1.0 - this.alpha_acc);
+        this.alpha_acc += mat.alpha;
+        if this.alpha_acc >= 1.0 {
+            this.alpha_acc = 1.0;
+        }
     }
 
     param MAX_STEPS: uint = 400;

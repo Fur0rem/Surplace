@@ -8,6 +8,10 @@ module Colour {
         var b: real(64);
     }
 
+    proc RGB.interpolate(other: RGB, t: real(64)) : RGB {
+        return this + (other - this) * t;
+    }
+
     proc RGB.print(stream) {
         var ir = (255 * r):uint;
         var ig = (255 * g):uint;
