@@ -184,6 +184,7 @@ module Object {
         var steps_taken: uint;
         var normal: Vec3;
         var alpha_acc: real(64);
+        var light_acc: Colour.RGB;
     }
 
     proc ref Hit.hit_after_transparent(mat: Material) {

@@ -21,10 +21,10 @@ proc main() {
     // TODO: fix issue with coordinate system
     // For now : +Y = left, +X = down, +Z = forward
     var camera = new Camera(
-        origin = new Vec3(0.0, 0.0, -1.0)
+        origin = new Vec3(0.0, 0.0, -3.0)
     );
 
-    {
+    /*{
         var obj1 = new Object(
             shape_tag = ShapeTag.Mandelbulb,
             shape_value = new ShapeValue(),
@@ -279,6 +279,124 @@ proc main() {
 
         const renderedimage = scene.render(camera, width, height);
         renderedimage.save("renders/output_6");
+    }*/
+
+    {
+        const floor = new Object(
+            shape_tag = ShapeTag.Cube,
+            rotation = new Vec3(0.0, 0.0, 0.0),
+            scale = new Vec3(30.0, 30.0, 30.0),
+            position = new Vec3(0.0, -30.0, 0.0),
+            material = new Material(Colour.LIME, 1.0, 0.0)
+        );
+
+        const ceiling = new Object(
+            shape_tag = ShapeTag.Cube,
+            rotation = new Vec3(0.0, 0.0, 0.0),
+            scale = new Vec3(30.0, 30.0, 30.0),
+            position = new Vec3(0.0, 30.0, 0.0),
+            material = new Material(Colour.PINK, 1.0, 0.0)
+        );
+
+        const back_wall = new Object(
+            shape_tag = ShapeTag.Cube,
+            rotation = new Vec3(0.0, 0.0, 0.0),
+            scale = new Vec3(30.0, 30.0, 30.0),
+            position = new Vec3(0.0, 0.0, 30.0),
+            material = new Material(Colour.WHITE, 1.0, 0.0)
+        );
+
+        const left_wall = new Object(
+            shape_tag = ShapeTag.Cube,
+            rotation = new Vec3(0.0, 0.0, 0.0),
+            scale = new Vec3(30.0, 30.0, 30.0),
+            position = new Vec3(-30.0, 0.0, 0.0),
+            material = new Material(Colour.RED, 1.0, 0.0)
+        );
+
+        const right_wall = new Object(
+            shape_tag = ShapeTag.Cube,
+            rotation = new Vec3(0.0, 0.0, 0.0),
+            scale = new Vec3(30.0, 30.0, 30.0),
+            position = new Vec3(30.0, 0.0, 0.0),
+            material = new Material(Colour.BLUE, 1.0, 0.0)
+        );
+
+        const front_wall = new Object(
+            shape_tag = ShapeTag.Cube,
+            rotation = new Vec3(0.0, 0.0, 0.0),
+            scale = new Vec3(20.0, 20.0, 20.0),
+            position = new Vec3(0.0, 0.0, -40.0),
+            material = new Material(Colour.WHITE, 1.0, 0.0)
+        );
+
+        const sphere1 = new Object(
+            shape_tag = ShapeTag.Sphere,
+            rotation = new Vec3(0.0, 0.0, 0.0),
+            scale = new Vec3(2.0, 2.0, 2.0),
+            position = new Vec3(-2.5, 0.0, 2.0),
+            material = new Material(Colour.RED, 1.0, 0.0)
+        );
+
+        const sphere2 = new Object(
+            shape_tag = ShapeTag.Sphere,
+            rotation = new Vec3(0.0, 0.0, 0.0),
+            scale = new Vec3(2.0, 2.0, 2.0),
+            position = new Vec3(2.5, 0.0, 2.0),
+            material = new Material(Colour.BLUE, 1.0, 0.0)
+        );
+
+        const sphere3 = new Object(
+            shape_tag = ShapeTag.Sphere,
+            rotation = new Vec3(0.0, 0.0, 0.0),
+            scale = new Vec3(2.0, 2.0, 2.0),
+            position = new Vec3(0.0, 0.0, 2.0),
+            material = new Material(Colour.GREEN, 1.0, 0.0)
+        );
+
+        const light = new Object(
+            shape_tag = ShapeTag.Sphere,
+            rotation = new Vec3(0.0, 0.0, 0.0),
+            scale = new Vec3(1.0, 1.0, 1.0),
+            position = new Vec3(0.0, 5.0, 2.0),
+            material = new Material(Colour.ORANGE, 1.0, 6.0)
+        );
+
+        const op1 = Union();
+        const op2 = Union();
+        const op3 = Union();
+        const op4 = Union();
+        const op5 = Union();
+        const op6 = Union();
+        const op7 = Union();
+        const op8 = Union();
+        const op9 = Union();
+        
+        const leaf1 = Leaf(floor);
+        const leaf2 = Leaf(ceiling);
+        const leaf3 = Leaf(back_wall);
+        const leaf4 = Leaf(left_wall);
+        const leaf5 = Leaf(right_wall);
+        const leaf6 = Leaf(front_wall);
+        const leaf7 = Leaf(sphere1);
+        const leaf8 = Leaf(sphere2);
+        const leaf9 = Leaf(sphere3);
+        const leaf10 = Leaf(light);
+        
+        const node1 = Node(op1, leaf1, leaf2);
+        const node2 = Node(op2, node1, leaf3);
+        const node3 = Node(op3, node2, leaf4);
+        const node4 = Node(op4, node3, leaf5);
+        const node5 = Node(op5, node4, leaf6);
+        const node6 = Node(op6, node5, leaf7);
+        const node7 = Node(op7, node6, leaf8);
+        const node8 = Node(op8, node7, leaf9);
+        const scene = Node(op9, node8, leaf10);
+        
+
+        const renderedimage = scene.render(camera, width, height);
+        renderedimage.save("renders/output_7");
+
     }
 
 }

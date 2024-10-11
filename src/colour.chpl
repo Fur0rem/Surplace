@@ -52,6 +52,10 @@ module Colour {
         return new RGB(a * b.r, a * b.g, a * b.b);
     }
 
+    operator * (a: RGB, b: RGB) : RGB {
+        return new RGB(a.r * b.r, a.g * b.g, a.b * b.b);
+    }
+
     operator / (a: RGB, b: real(64)) : RGB {
         return new RGB(a.r / b, a.g / b, a.b / b);
     }

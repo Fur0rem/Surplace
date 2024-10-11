@@ -129,7 +129,7 @@ module SceneModule {
         return new SceneNode(op, left, right);
     }
 
-    proc SceneNode.distance(ray : Ray): (real(64), Material, borrowed SceneNode?) {
+    proc SceneNode.distance(ray : Ray): (real(64), Material, borrowed SceneNode?, Colour.RGB) {
         if this.isLeaf {
             const object = this.value.leaf;
             const p = object.map_point(ray.origin);
@@ -147,44 +147,46 @@ module SceneModule {
             var scale = M4x4_scale(object.scale);
             delta = delta * scale;
             const dist = delta.length();
-            return (dist, object.material, this);
+            const light_taken = object.material.col * (object.material.emission / (dist + 2.0)**1.01);
+            return (dist, object.material, this, light_taken);
         }
 
         const op = this.getOperation();
         const left = this.getLeft()!;
         const right = this.getRight()!;
 
-        const (left_dist, left_mat, left_obj) = left.distance(ray);
-        const (right_dist, right_mat, right_obj) = right.distance(ray);
+        const (left_dist, left_mat, left_obj, left_light) = left.distance(ray);
+        const (right_dist, right_mat, right_obj, right_light) = right.distance(ray);
         // writeln("Dist ", left_dist, " - ", right_dist);
         // writeln("Col ", left_col, " - ", right_mat);
 
         select op.tag {
             when OperationTag.Union {
                 // return min(left_dist, right_dist);
+                const light = left_light + right_light;
                 if (left_dist < right_dist) {
-                    return (left_dist, left_mat, left_obj);
+                    return (left_dist, left_mat, left_obj, light);
                 }   
                 else {
-                    return (right_dist, right_mat, right_obj);
+                    return (right_dist, right_mat, right_obj, light);
                 }
             }
             when OperationTag.Intersection {
                 // return max(left_dist, right_dist);
                 if (left_dist > right_dist) {
-                    return (left_dist, left_mat, left_obj);
+                    return (left_dist, left_mat, left_obj, left_light);
                 }
                 else {
-                    return (right_dist, right_mat, right_obj);
+                    return (right_dist, right_mat, right_obj, right_light);
                 }
             }
             when OperationTag.Difference {
                 // return min(left_dist, -right_dist);
                 if (left_dist < -right_dist) {
-                    return (left_dist, left_mat, left_obj);
+                    return (left_dist, left_mat, left_obj, left_light);
                 }
                 else {
-                    return (-right_dist, right_mat, right_obj);
+                    return (-right_dist, right_mat, right_obj, right_light);
                 }
             }
             when OperationTag.SmoothUnion {
@@ -216,7 +218,8 @@ module SceneModule {
                 const min_dist = min(left_dist, right_dist) - x;
                 // const col = (right_mat * i) + (left_mat * (1.0 - i));
                 const mat = Material_interpolate(a=left_mat, b=right_mat, t=i);
-                return (min_dist, mat, obj);
+                const light = mat.col * (mat.emission / (min_dist + 2.0)**1.01);
+                return (min_dist, mat, obj, light);
                 // if (left_dist < right_dist) {
                 //     return (left_dist - x, left_col);
                 // }
@@ -226,7 +229,7 @@ module SceneModule {
             }
         }
 
-        return (+inf, new Material(), this);
+        return (+inf, new Material(), this, Colour.BLACK);
     }
 
     proc SceneNode.normal(in r: Ray) : Vec3 {
@@ -236,12 +239,12 @@ module SceneModule {
         // const (x, _) = this.distance(new Ray(origin = r.origin + new Vec3(EPS,0.0,0.0), direction = r.direction)) - this.distance(new Ray(origin = r.origin - new Vec3(EPS,0.0,0.0), direction = r.direction));
         // const (y, _) = this.distance(new Ray(origin = r.origin + new Vec3(0.0,EPS,0.0), direction = r.direction)) - this.distance(new Ray(origin = r.origin - new Vec3(0.0,EPS,0.0), direction = r.direction));
         // const (z, _) = this.distance(new Ray(origin = r.origin + new Vec3(0.0,0.0,EPS), direction = r.direction)) - this.distance(new Ray(origin = r.origin - new Vec3(0.0,0.0,EPS), direction = r.direction));
-        const (dxp, _, _) = this.distance(new Ray(origin = r.origin + new Vec3(EPS,0.0,0.0), direction = r.direction));
-        const (dxn, _, _) = this.distance(new Ray(origin = r.origin - new Vec3(EPS,0.0,0.0), direction = r.direction));
-        const (dyp, _, _) = this.distance(new Ray(origin = r.origin + new Vec3(0.0,EPS,0.0), direction = r.direction));
-        const (dyn, _, _) = this.distance(new Ray(origin = r.origin - new Vec3(0.0,EPS,0.0), direction = r.direction));
-        const (dzp, _, _) = this.distance(new Ray(origin = r.origin + new Vec3(0.0,0.0,EPS), direction = r.direction));
-        const (dzn, _, _) = this.distance(new Ray(origin = r.origin - new Vec3(0.0,0.0,EPS), direction = r.direction));
+        const (dxp, _, _, _) = this.distance(new Ray(origin = r.origin + new Vec3(EPS,0.0,0.0), direction = r.direction));
+        const (dxn, _, _, _) = this.distance(new Ray(origin = r.origin - new Vec3(EPS,0.0,0.0), direction = r.direction));
+        const (dyp, _, _, _) = this.distance(new Ray(origin = r.origin + new Vec3(0.0,EPS,0.0), direction = r.direction));
+        const (dyn, _, _, _) = this.distance(new Ray(origin = r.origin - new Vec3(0.0,EPS,0.0), direction = r.direction));
+        const (dzp, _, _, _) = this.distance(new Ray(origin = r.origin + new Vec3(0.0,0.0,EPS), direction = r.direction));
+        const (dzn, _, _, _) = this.distance(new Ray(origin = r.origin - new Vec3(0.0,0.0,EPS), direction = r.direction));
         const dx = dxp - dxn;
         const dy = dyp - dyn;
         const dz = dzp - dzn;
@@ -355,20 +358,24 @@ module SceneModule {
     proc SceneNode.ray_march(in ray: Ray, depth: uint) : Hit {
         param MAX_STEPS: uint = 500;
         param MAX_DIST: real(64) = 300.0;
-        param EPS: real(64) = 0.002;
+        param EPS: real(64) = 0.001;
 
         var hit = new Hit(
             did_hit = false,
             colour = Colour.BLACK,
             normal = new Vec3(0.0, 0.0, 0.0),
             steps_taken = MAX_STEPS,
-            alpha_acc = 0.0
+            alpha_acc = 0.0,
+            light_acc = Colour.BLACK
         );
 
         const sky_mat = new Material(
             col = Colour.LIGHT_BLUE,
-            alpha = 1.0
+            alpha = 1.0,
+            emission = 0.0
         );
+
+        var mask = Colour.WHITE;
 
         for i in 0..MAX_STEPS {
 
@@ -382,7 +389,7 @@ module SceneModule {
                 // );
                 // writeln("acc_alpha: ", hit.alpha_acc);
             // }
-            var (min_dist, mat, scenenode) = this.distance(ray);
+            var (min_dist, mat, scenenode, light_accumulation) = this.distance(ray);
             // if (depth == 1) {
             //     writeln("min_dist: ", min_dist, " scenenode: ", scenenode, "\n");
 
@@ -391,6 +398,11 @@ module SceneModule {
             //     this.print_all_distances(ray);
             // }
             var leaf = scenenode!;
+
+            // accumulate light
+            // hit.light_acc += light_accumulation * mask;
+            hit.light_acc += light_accumulation / (min_dist + 1.0)**1.01;
+            mask *= mat.col;
             
             var (col, alpha) = (mat.col, mat.alpha);
             if min_dist > MAX_DIST {
@@ -437,6 +449,7 @@ module SceneModule {
         //     writeln("acc_alpha final: ", hit.alpha_acc);
         // }
         this.reset_ignored();
+
         return hit;
     }
 
@@ -463,7 +476,13 @@ module SceneModule {
                         depth = 1;
                     }
                     var hit = this.ray_march(ray, depth);
-                    colour.pixels[x, y] += hit.colour / nb_samples;
+                    hit.light_acc /= hit.steps_taken;
+                    hit.light_acc.r = min(hit.light_acc.r, 1.0);
+                    hit.light_acc.g = min(hit.light_acc.g, 1.0);
+                    hit.light_acc.b = min(hit.light_acc.b, 1.0);
+
+                    const light_ratio = 0.90;
+                    colour.pixels[x, y] += (light_ratio * (hit.colour + hit.light_acc) + (1.0 - light_ratio) * hit.light_acc) / nb_samples;
                     normal.pixels[x, y] += new RGB(
                         r = (1.0 + hit.normal.x) / 2.0,
                         g = (1.0 + hit.normal.y) / 2.0,
@@ -485,7 +504,7 @@ module SceneModule {
                 // // writeln("y = ", y);
                 // // writeln("hit = ", hit);
             }
-            // writeln("x = ", x);
+            writeln("x = ", x);
         }
 
         writeln("Max time taken: ", max_time_taken * 1000000, " us");
