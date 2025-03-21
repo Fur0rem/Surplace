@@ -29,7 +29,7 @@ module Object {
         // var scale: real(64);
         var rotation: Vec3;
         var material: Material;
-        var ignored: bool;
+        // var ignored: bool;
     }
 
     // Diameter of sphere is 1
@@ -108,22 +108,25 @@ module Object {
     }
 
     proc Object.distance(pos: Point) : real(64) {
-        if (this.ignored) {
-            return 99999; // can't put +inf otherwise minimum will fail or some shit, fuck floats
-        }
+        // if (this.ignored) {
+        //     return 99999; // can't put +inf otherwise minimum will fail or some shit, fuck floats
+        // }
         
+        var dist = +inf;
         select this.shape_tag {
             when ShapeTag.Sphere {
-                return Sphere_distance(pos);
+                dist = Sphere_distance(pos);
             }
             when ShapeTag.Cube {
-                return Cube_distance(pos);
+                dist = Cube_distance(pos);
             }
             when ShapeTag.Mandelbulb {
                 const (iterations, power) = this.shape_value.mandelbulb;
-                return Mandelbulb_distance(pos, iterations, power);
+                dist = Mandelbulb_distance(pos, iterations, power);
             }
         }
+        return dist;
+        // return (this.ignored, dist);
         // Unreachable
         return +inf;
     }
@@ -180,6 +183,7 @@ module Object {
 
     record Hit {
         var did_hit: bool;
+        var position: Point;
         var colour: Colour.RGB;
         var steps_taken: uint;
         var normal: Vec3;
@@ -190,7 +194,9 @@ module Object {
     proc ref Hit.hit_after_transparent(mat: Material) {
         // blend the colours
         this.colour = this.colour * this.alpha_acc + mat.col * (1.0 - this.alpha_acc);
-        this.alpha_acc += mat.alpha;
+        // this.alpha_acc += mat.alpha;
+        var dist_to_full_alpha = 1.0 - this.alpha_acc;
+        this.alpha_acc += dist_to_full_alpha * mat.alpha;
         if this.alpha_acc >= 1.0 {
             this.alpha_acc = 1.0;
         }

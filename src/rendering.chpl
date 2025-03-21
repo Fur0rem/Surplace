@@ -23,8 +23,13 @@ module Rendering {
             var f = fi.writer(locking=false);
             f.writef("P3\n%i %i\n255\n", width, height);
             for x in 0..<width {
-                for y in 0..<height {        
+                for y in 0..<height {
+                    // if (y == 210 && x == 250) {
+                        // Colour.WHITE.print(f);
+                    // }
+                    // else {
                     pixels[x, y].print(f);
+                    // }
                 }
             }
             f.close();
@@ -58,13 +63,22 @@ module Rendering {
             mkdir(dir_name);
         }
         catch e: Error {
-            writeln("Error creating directory: ", e);
+            writeln("Error creating directory: ", e, "will delete and try again");
+            try {
+                rmTree(dir_name);
+                mkdir(dir_name);
+                writeln("Directory created successfully");
+            }
+            catch e: Error {
+                writeln("Fuck u ", e);
+            }
         }
         colour.save(dir_name + "/colour.ppm");
         normal.save(dir_name + "/normal.ppm");
         ambient_occlusion.save(dir_name + "/ambient_occlusion.ppm");
         time_taken.save(dir_name + "/time_taken.ppm");
         combine_renders().save(dir_name + "/final_render.ppm");
+        writeln("done :D");
     }
 
 }

@@ -5,6 +5,7 @@ let
   # Rolling updates, not deterministic.
   pkgs = import (fetchTarball("channel:nixpkgs-unstable")) {};
 in pkgs.mkShell {
-  buildInputs = with pkgs; [ gcc re2 ];
+  buildInputs = with pkgs; [ gcc re2 python3 ];
   CHPL_HOME = "../../../Downloads/chapel";
+  NIX_ENFORCE_NO_NATIVE = 0;
 }

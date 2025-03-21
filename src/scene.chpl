@@ -9,6 +9,7 @@ module SceneModule {
     import Camera;
     use Time;
     use MaterialModule;
+    import Math;
 
     enum OperationTag {
         Union,
@@ -148,45 +149,63 @@ module SceneModule {
             delta = delta * scale;
             const dist = delta.length();
             const light_taken = object.material.col * (object.material.emission / (dist + 2.0)**1.01);
-            return (dist, object.material, this, light_taken);
+            return (dist, object.material, this, light_taken/*, object.ignored*/);
         }
 
         const op = this.getOperation();
         const left = this.getLeft()!;
         const right = this.getRight()!;
 
-        const (left_dist, left_mat, left_obj, left_light) = left.distance(ray);
-        const (right_dist, right_mat, right_obj, right_light) = right.distance(ray);
+        var (left_dist, left_mat, left_obj, left_light/*, left_ign*/) = left.distance(ray);
+        var (right_dist, right_mat, right_obj, right_light/*, right_ign*/) = right.distance(ray);
         // writeln("Dist ", left_dist, " - ", right_dist);
         // writeln("Col ", left_col, " - ", right_mat);
 
         select op.tag {
             when OperationTag.Union {
                 // return min(left_dist, right_dist);
+                // if (left_ign) {
+                //     left_dist = 999999.0;
+                // }
+                // if (right_ign) {
+                //     right_dist = 999999.0;
+                // }
                 const light = left_light + right_light;
                 if (left_dist < right_dist) {
-                    return (left_dist, left_mat, left_obj, light);
+                    return (left_dist, left_mat, left_obj, light/*, left_ign*/);
                 }   
                 else {
-                    return (right_dist, right_mat, right_obj, light);
+                    return (right_dist, right_mat, right_obj, light/*, right_ign*/);
                 }
             }
             when OperationTag.Intersection {
                 // return max(left_dist, right_dist);
+                // if (left_ign) {
+                //     left_dist = 999999.0;
+                // }
+                // if (right_ign) {
+                //     right_dist = 999999.0;
+                // }
                 if (left_dist > right_dist) {
-                    return (left_dist, left_mat, left_obj, left_light);
+                    return (left_dist, left_mat, left_obj, left_light/*, left_ign*/);
                 }
                 else {
-                    return (right_dist, right_mat, right_obj, right_light);
+                    return (right_dist, right_mat, right_obj, right_light/*, right_ign*/);
                 }
             }
             when OperationTag.Difference {
                 // return min(left_dist, -right_dist);
+                // if (left_ign) {
+                //     left_dist = 999999.0;
+                // }
+                // if (right_ign) {
+                //     right_dist = 999999.0;
+                // }
                 if (left_dist < -right_dist) {
-                    return (left_dist, left_mat, left_obj, left_light);
+                    return (left_dist, left_mat, left_obj, left_light/*, left_ign*/);
                 }
                 else {
-                    return (-right_dist, right_mat, right_obj, right_light);
+                    return (-right_dist, right_mat, right_obj, right_light/*, right_ign*/);
                 }
             }
             when OperationTag.SmoothUnion {
@@ -197,6 +216,16 @@ module SceneModule {
                 // else {
                 //     return (right_dist - op.value.smoothUnion, right_mat);
                 // }
+                var old_right_dist = right_dist;
+                var old_left_dist = left_dist;
+                // if (left_ign) {
+                //     left_dist = 999999.0;
+                //     old_left_dist = -old_left_dist;
+                // }
+                // if (right_ign) {
+                //     right_dist = 999999.0;
+                //     old_right_dist = -old_right_dist;
+                // }
                 var obj;
                 if (left_dist < right_dist) {
                     obj = left_obj;
@@ -206,9 +235,9 @@ module SceneModule {
                 }
 
                 const k = op.value.smoothUnion;
-                const h = max(k - abs(left_dist - right_dist), 0) / k;
+                const h = max(k - abs(old_left_dist - old_right_dist), 0) / k;
                 const x = ((h**3)*k) / 6;
-                var i = (0.5 + 0.5 * (left_dist - right_dist) / k);//, 0.0, 1.0); //interpol
+                var i = (0.5 + 0.5 * (old_left_dist - old_right_dist) / k);//, 0.0, 1.0); //interpol
                 if (i < 0.0) {
                     i = 0.0;
                 }
@@ -219,7 +248,7 @@ module SceneModule {
                 // const col = (right_mat * i) + (left_mat * (1.0 - i));
                 const mat = Material_interpolate(a=left_mat, b=right_mat, t=i);
                 const light = mat.col * (mat.emission / (min_dist + 2.0)**1.01);
-                return (min_dist, mat, obj, light);
+                return (min_dist, mat, obj, light/*, left_ign || right_ign*/);
                 // if (left_dist < right_dist) {
                 //     return (left_dist - x, left_col);
                 // }
@@ -229,7 +258,7 @@ module SceneModule {
             }
         }
 
-        return (+inf, new Material(), this, Colour.BLACK);
+        return (+inf, new Material(), this, Colour.BLACK/*, false*/);
     }
 
     proc SceneNode.normal(in r: Ray) : Vec3 {
@@ -321,15 +350,15 @@ module SceneModule {
     //     return no_hit;
     // }
 
-    proc SceneNode.reset_ignored() {
-        if this.isLeaf {
-            this.value.leaf.ignored = false;
-        }
-        else {
-            this.getLeft()!.reset_ignored();
-            this.getRight()!.reset_ignored();
-        }
-    }
+    // proc SceneNode.reset_ignored() {
+    //     if this.isLeaf {
+    //         this.value.leaf.ignored = false;
+    //     }
+    //     else {
+    //         this.getLeft()!.reset_ignored();
+    //         this.getRight()!.reset_ignored();
+    //     }
+    // }
 
     proc SceneNode.print() {
         if this.isLeaf {
@@ -376,81 +405,125 @@ module SceneModule {
         );
 
         var mask = Colour.WHITE;
-
+        var did_hit_transparent_last_time = false;
+        var last_mat = new Material();
+        var last_pos = new Point(0.0, 0.0, 0.0);
         for i in 0..MAX_STEPS {
 
-            // if (depth == 1) {
-                // return new Hit(
-                //     did_hit = false,
-                //     colour = Colour.YELLOW,
-                //     normal = new Vec3(0.0, 0.0, 0.0),
-                //     steps_taken = 0,
-                //     alpha_acc = 0.0
-                // );
-                // writeln("acc_alpha: ", hit.alpha_acc);
-            // }
             var (min_dist, mat, scenenode, light_accumulation) = this.distance(ray);
-            // if (depth == 1) {
-            //     writeln("min_dist: ", min_dist, " scenenode: ", scenenode, "\n");
+            
+            var is_inside = false;
+            if (min_dist < 0.0) {
+                is_inside = true;
+            }
 
-            //     this.print();
-            //     writeln();
-            //     this.print_all_distances(ray);
-            // }
             var leaf = scenenode!;
 
             // accumulate light
-            // hit.light_acc += light_accumulation * mask;
-            hit.light_acc += light_accumulation / (min_dist + 1.0)**1.01;
-            mask *= mat.col;
+            // hit.light_acc += light_accumulation / (min_dist + 1.0)**1.01;
+            // mask *= mat.col;
             
             var (col, alpha) = (mat.col, mat.alpha);
+
+            // Over
             if min_dist > MAX_DIST {
                 hit.hit_after_transparent(sky_mat);
-                // if (depth == 1) {
-                //     writeln("acc_alpha final: ", hit.alpha_acc);
-                // }
-                // hit.steps_taken = i;
-                this.reset_ignored();
                 return hit;
             }
 
             if min_dist < EPS {
-                // if (depth == 1) {
-                // writeln("before hit: ", leaf.value.leaf);
-                // }
                 if (!hit.did_hit) {
                     hit.did_hit = true;
+                    hit.position = ray.origin;
                     hit.steps_taken = i;
                     hit.normal = this.normal(ray);
                 }
-                leaf.value.leaf.ignored = true;
-                // if (depth == 1) {
-                //     writeln("after hit: ", leaf.value.leaf);
-                // }
-                // writeln("after hit: ", leaf.value.leaf);
-                const acc_before = hit.alpha_acc;
-                hit.hit_after_transparent(mat);
-                const acc_after = hit.alpha_acc;
-                // writeln("acc_before: ", acc_before, " acc_after: ", acc_after);
-                if (hit.alpha_acc >= 1.0) {
-                    // hit.steps_taken = i;
-                    this.reset_ignored();
-                    return hit;
-                }                
+                if (last_pos.x == 0.0 && last_pos.y == 0.0 && last_pos.z == 0.0) {
+                    last_pos = hit.position;
+                }
+                var dist_to_full_alpha = 1.0 - hit.alpha_acc;
+                hit.colour = (hit.colour * hit.alpha_acc) + (col * dist_to_full_alpha);
+                hit.alpha_acc += alpha * dist_to_full_alpha;
+                hit.hit_after_transparent(sky_mat);
+                return hit;
+            } else {
+                ray.advance(min_dist);
             }
-
-            ray.advance(min_dist);
         }
 
-        // hit.steps_taken = MAX_STEPS;
         hit.hit_after_transparent(sky_mat);
-        // if (depth == 1) {
-        //     writeln("acc_alpha final: ", hit.alpha_acc);
-        // }
-        this.reset_ignored();
 
         return hit;
+    }
+
+    proc SceneNode.ambient_occlusion(hit: Hit): real(64) {
+        // return hit.steps_taken;
+
+        // Create a sphere of 30 points
+        // const (x, y, z) = hit.position;
+        const x = hit.position.x;
+        const y = hit.position.y;
+        const z = hit.position.z;
+        // const EPS = 0.003;
+        // const points = [
+        //     (x + EPS, y, z),
+        //     (x - EPS, y, z),
+        //     (x, y + EPS, z),
+        //     (x, y - EPS, z),
+        //     (x, y, z + EPS),
+        //     (x, y, z - EPS)
+        // ];
+
+    //     def fibonacci_sphere(samples=1000):
+
+    // points = []
+    // phi = math.pi * (math.sqrt(5.) - 1.)  # golden angle in radians
+
+    // for i in range(samples):
+    //     y = 1 - (i / float(samples - 1)) * 2  # y goes from 1 to -1
+    //     radius = math.sqrt(1 - y * y)  # radius at y
+
+    //     theta = phi * i  # golden angle increment
+
+    //     x = math.cos(theta) * radius
+    //     z = math.sin(theta) * radius
+
+    //     points.append((x, y, z))
+
+    // return points
+
+        var points: [0..<30] (3 * real(64));
+        const phi = 3.1415 * (sqrt(5.0) - 1.0);
+        for i in 0..<30 {
+            const dy = 1 - (i:real(64) / 29.0) * 2;
+            const radius = sqrt(1-dy*dy);
+            const theta=phi*i;
+            const dx = Math.cos(theta) * radius;
+            const dz = Math.sin(theta) * radius;
+
+            points[i] = (x + dx, y+dy, z+dz);
+        }
+
+        // writeln(points);
+        var nb_inside = 0;
+        for p in points {
+            const ray = new Ray(
+                origin = new Point(
+                    x=p[0],y=p[1],z=p[2]
+                ),
+                direction=-hit.normal
+                // direction=new Vec3(0.0,0.0,0.0)
+            );
+            const (dist, _, _, _/*, ign*/) = this.distance(ray);
+            // writeln(dist);
+            // if (!ign) {
+                if dist < 0.001 {
+                    nb_inside += 1;
+                }
+            // }
+        }
+        // writeln(nb_inside);
+        return nb_inside / 6.0;
     }
 
     proc SceneNode.render(camera: Camera.Camera, width: uint, height: uint) : Render {
@@ -477,19 +550,21 @@ module SceneModule {
                     }
                     var hit = this.ray_march(ray, depth);
                     hit.light_acc /= hit.steps_taken;
+                    hit.light_acc *= 0.8;
                     hit.light_acc.r = min(hit.light_acc.r, 1.0);
                     hit.light_acc.g = min(hit.light_acc.g, 1.0);
                     hit.light_acc.b = min(hit.light_acc.b, 1.0);
 
-                    const light_ratio = 0.90;
+                    const light_ratio = 0.95;
                     colour.pixels[x, y] += (light_ratio * (hit.colour + hit.light_acc) + (1.0 - light_ratio) * hit.light_acc) / nb_samples;
                     normal.pixels[x, y] += new RGB(
                         r = (1.0 + hit.normal.x) / 2.0,
                         g = (1.0 + hit.normal.y) / 2.0,
                         b = (1.0 + hit.normal.z) / 2.0
                     ) / nb_samples;
-                    param STRENGTH = 5.0;
-                    amb_occ.pixels[x, y] = Colour.WHITE - ((Colour.WHITE * hit.steps_taken) / (MAX_STEPS / STRENGTH));
+                    const amb = this.ambient_occlusion(hit);
+                    amb_occ.pixels[x, y] = Colour.WHITE - ((Colour.WHITE * amb));
+                    // amb_occ.pixels[x, y] = Colour.WHITE - ((Colour.WHITE * hit.steps_taken) / (MAX_STEPS / STRENGTH));
                     amb_occ.pixels[x, y] = max(amb_occ.pixels[x, y], Colour.BLACK);
                 }
                 var time_taken = chrono.elapsed();
