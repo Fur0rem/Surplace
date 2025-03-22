@@ -180,9 +180,9 @@ proc main() {
 
         const renderedimage = scene.render(camera, width, height);
         renderedimage.save("renders/output_3");
-    }
+    }*/
 
-    {
+    /*{
         // const obj1 = new Object(
         //     shape_tag = ShapeTag.Sphere,
         //     rotation = new Vec3(0.0,0.0,0.0),
@@ -195,14 +195,14 @@ proc main() {
             rotation = new Vec3(0.0,0.0,0.0),
             scale = new Vec3(30.0, 30.0, 30.0),
             position = new Vec3(-5.0, 0.0, 30.0),
-            material = new Material(Colour.WHITE, 0.3)
+            material = new Material(Colour.WHITE, 0.1, 0.0)
         );
         const obj3 = new Object(
             shape_tag = ShapeTag.Sphere,
             rotation = new Vec3(0.0,0.0,0.0),
             scale = new Vec3(1.0, 1.0, 1.0),
             position = new Vec3(0.5, 0.0, 1.0),
-            material = new Material(Colour.GREEN, 0.5)
+            material = new Material(Colour.GREEN, 0.3, 0.0)
         );
         // const op = Union();
         // const leaf1 = Leaf(obj1);
@@ -226,7 +226,7 @@ proc main() {
         renderedimage.save("renders/output_4");
     }*/
 
-    {
+    /*{
         const obj1 = new Object(
             shape_tag = ShapeTag.Sphere,
             rotation = new Vec3(0.0,0.0,0.0),
@@ -248,11 +248,11 @@ proc main() {
             op, leaf1, leaf2
         );
 
-        const renderedimage = scene.render(camera, width, height);
+        const renderedimage = scene.render(camera, width / 2, height / 2);
         renderedimage.save("renders/output_5");
     }
 
-    /*{
+    {
         const obj1 = new Object(
             shape_tag = ShapeTag.Sphere,
             rotation = new Vec3(0.0,0.0,0.0),
@@ -281,7 +281,7 @@ proc main() {
         renderedimage.save("renders/output_6");
     }*/
 
-    {
+    /*{
         const floor = new Object(
             shape_tag = ShapeTag.Cube,
             rotation = new Vec3(0.0, 0.0, 0.0),
@@ -395,8 +395,7 @@ proc main() {
 
         const renderedimage = scene.render(camera, width, height);
         renderedimage.save("renders/output_7");
-
-    }
+    }*/
 
     {
         const sphere1 = new Object(
@@ -420,7 +419,7 @@ proc main() {
             rotation = new Vec3(0.0, 0.0, 0.0),
             scale = new Vec3(2.0, 2.0, 2.0),
             position = new Vec3(0.0, 0.0, 2.0),
-            material = new Material(Colour.GREEN, 0.2, 0.0)
+            material = new Material(Colour.GREEN, 0.02, 0.0)
         );
 
         const su1 = SmoothUnion(1.2);
@@ -433,9 +432,8 @@ proc main() {
         const n1 = Node(su1, leaf7, leaf8);
         const scene = Node(su2, leaf9, n1);
 
-        const renderedimage = scene.render(camera, width, height);
+        const renderedimage = scene.render(camera, width / 2, height / 2);
         renderedimage.save("renders/to_fix");
-
     }
     
     {
@@ -452,10 +450,11 @@ proc main() {
             rotation = new Vec3(0.0, 0.0, 0.0),
             scale = new Vec3(1.0, 1.0, 1.0),
             position = new Vec3(0.0, 0.0, 2.0),
-            material = new Material(Colour.BLUE, 1.0, 0.0)
+            material = new Material(Colour.RED, 1.0, 0.0)
         );
 
-        const su1 = SmoothUnion(1.5);
+        // const su1 = SmoothUnion(1.5);
+        const su1 = Intersection();
         
         const leaf7 = Leaf(sphere1);
         const leaf9 = Leaf(sphere3);
@@ -464,7 +463,6 @@ proc main() {
 
         const renderedimage = scene.render(camera, width / 2, height / 2);
         renderedimage.save("renders/to_fix2");
-
     }
 
     {
@@ -473,7 +471,7 @@ proc main() {
             rotation = new Vec3(0.0, 0.0, 0.0),
             scale = new Vec3(2.0, 2.0, 2.0),
             position = new Vec3(2.0, 0.0, 2.0),
-            material = new Material(Colour.WHITE, 0.5, 0.0)
+            material = new Material(Colour.WHITE, 0.2, 0.0)
         );
         
         const sphere = new Object(
@@ -481,18 +479,42 @@ proc main() {
             rotation = new Vec3(0.0, 0.0, 0.0),
             scale = new Vec3(2.0, 2.0, 2.0),
             position = new Vec3(-2.0, 0.0, 2.0),
-            material = new Material(Colour.BLUE, 0.3, 0.0)
+            material = new Material(Colour.BLUE, 0.1, 0.0)
+        );
+        
+        const sphere2 = new Object(
+            shape_tag = ShapeTag.Sphere,
+            rotation = new Vec3(0.0, 0.0, 0.0),
+            scale = new Vec3(0.5, 0.5, 0.5),
+            position = new Vec3(0.0, 0.0, 2.0),
+            material = new Material(Colour.RED, 1.0, 0.0)
         );
 
         const u = Union();
+        const u2 = Union();
         const leaf = Leaf(cube);
         const leaf2 = Leaf(sphere);
-        const scene = Node(
-            u, leaf, leaf2
-        );
+        const leaf3 = Leaf(sphere2);
+        const n = Node(u, leaf, leaf2);
+        const scene = Node(u2, n, leaf3);
 
-        const renderedimage = scene.render(camera, width, height);
+        const renderedimage = scene.render(camera, width / 2, height / 2);
         renderedimage.save("renders/to_fix3");
+    }
+
+    {
+        const sphere = new Object(
+            shape_tag = ShapeTag.Sphere,
+            rotation = new Vec3(0.0, 0.0, 0.0),
+            scale = new Vec3(2.0, 2.0, 2.0),
+            position = new Vec3(0.0, 0.0, -3.0),
+            material = new Material(Colour.BLUE, 0.1, 0.0)
+        );
+        
+        const scene = Leaf(sphere);
+
+        const renderedimage = scene.render(camera, width / 4, height / 4);
+        renderedimage.save("renders/test");
     }
     
     {

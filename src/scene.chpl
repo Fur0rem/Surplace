@@ -40,6 +40,14 @@ module SceneModule {
         return new Operation(tag = OperationTag.Union);
     }
 
+    proc Intersection(): Operation {
+        return new Operation(tag = OperationTag.Intersection);
+    }
+
+    proc Difference(): Operation {
+        return new Operation(tag = OperationTag.Difference);
+    }
+
     record Tree {
         var operation: Operation;
         var left: borrowed SceneNode?;
@@ -132,24 +140,28 @@ module SceneModule {
 
     proc SceneNode.distance(ray : Ray): (real(64), Material, borrowed SceneNode?, Colour.RGB) {
         if this.isLeaf {
+            // const object = this.value.leaf;
+            // const p = object.map_point(ray.origin);
+            // const obj_dist = object.distance(p);
+            // // writeln("obj: ", object, " ||| ray: ", ray, " ||| map: ", p, " ||| dist: ", obj_dist, "\n");
+            // var ray_obj = ray;
+            // ray_obj.advance(obj_dist);
+            // // writeln("ray_obj: ", ray_obj, "\n");
+
+            // // Transform the ray back into the space of the camera
+
+            // // Compute the distance between those two rays
+            // var delta = ray.origin - ray_obj.origin;
+            // // var scale = M4x4_rotation(object.rotation);
+            // var scale = M4x4_scale(object.scale);
+            // delta = delta * scale;
+            // const dist = delta.length();
+            // const light_taken = object.material.col * (object.material.emission / (dist + 2.0)**1.01);
+            // return (dist, object.material, this, light_taken/*, object.ignored*/);
             const object = this.value.leaf;
             const p = object.map_point(ray.origin);
             const obj_dist = object.distance(p);
-            // writeln("obj: ", object, " ||| ray: ", ray, " ||| map: ", p, " ||| dist: ", obj_dist, "\n");
-            var ray_obj = ray;
-            ray_obj.advance(obj_dist);
-            // writeln("ray_obj: ", ray_obj, "\n");
-
-            // Transform the ray back into the space of the camera
-
-            // Compute the distance between those two rays
-            var delta = ray.origin - ray_obj.origin;
-            // var scale = M4x4_rotation(object.rotation);
-            var scale = M4x4_scale(object.scale);
-            delta = delta * scale;
-            const dist = delta.length();
-            const light_taken = object.material.col * (object.material.emission / (dist + 2.0)**1.01);
-            return (dist, object.material, this, light_taken/*, object.ignored*/);
+            return (obj_dist, object.material, this, object.material.col * (object.material.emission / (obj_dist + 2.0)**1.01));
         }
 
         const op = this.getOperation();
@@ -373,11 +385,11 @@ module SceneModule {
 
     proc SceneNode.print_all_distances(ray: Ray) {
         if this.isLeaf {
-            const (dist, _, _) = this.distance(ray);
+            const (dist, _, _, _) = this.distance(ray);
             writeln("Leaf: ", this.value.leaf, " dist: ", dist);
         }
         else {
-            const (dist, _, _) = this.distance(ray);
+            const (dist, _, _, _) = this.distance(ray);
             writeln("Node: ", this.value.node.operation.tag, " dist: ", dist);
             this.getLeft()!.print_all_distances(ray);
             this.getRight()!.print_all_distances(ray);
@@ -432,25 +444,98 @@ module SceneModule {
             }
 
             if min_dist < EPS {
+                // this.print_all_distances(ray);
                 if (!hit.did_hit) {
                     hit.did_hit = true;
                     hit.position = ray.origin;
                     hit.steps_taken = i;
                     hit.normal = this.normal(ray);
                 }
-                if (last_pos.x == 0.0 && last_pos.y == 0.0 && last_pos.z == 0.0) {
+                /*if (last_pos.x == 0.0 && last_pos.y == 0.0 && last_pos.z == 0.0) {
                     last_pos = hit.position;
                 }
+
+                // Calculate the distance to full opacity
                 var dist_to_full_alpha = 1.0 - hit.alpha_acc;
+
+                // Blend the colors using alpha blending
                 hit.colour = (hit.colour * hit.alpha_acc) + (col * dist_to_full_alpha);
-                hit.alpha_acc += alpha * dist_to_full_alpha;
-                hit.hit_after_transparent(sky_mat);
-                return hit;
+
+                // Update the accumulated alpha according to how much of the color is opaque, and how far you traveled
+                var dist = (hit.position - last_pos).length();
+                // writeln("dist: ", dist);
+                const to_add = alpha * dist_to_full_alpha / ((dist + 0.001) * 1000000.0);
+                // writeln("to_add: ", to_add);
+                // writeln("alpha acc before: ", hit.alpha_acc, " to add: ", to_add);
+                hit.alpha_acc += to_add;
+                // writeln("alpha acc after: ", hit.alpha_acc);
+
+                // Terminate early if fully opaque
+                if (hit.alpha_acc >= 1.0) {
+                    return hit;
+                }*/
+
+                // Step inside the object and accumulate transparency
+                var steps_inside = 0;
+                // writeln("inside");
+                hit.colour = (hit.colour * hit.alpha_acc) + (col * (1.0 - hit.alpha_acc));
+                // writeln("alpha acc before: ", hit.alpha_acc);
+                // writeln("alpha acc after: ", hit.alpha_acc);
+                const sample_distance = 0.01;
+                hit.alpha_acc += mat.alpha;
+                if (hit.alpha_acc > 1.0) {
+                    hit.alpha_acc = 1.0;
+                }
+
+
+                // writeln("alpha acc before inside: ", hit.alpha_acc);
+
+                var new_ray = new Ray(
+                    origin = ray.origin,
+                    direction = ray.direction
+                );
+                // this.print_all_distances(new_ray);
+                new_ray.advance(min_dist);
+                // this.print_all_distances(new_ray);
+                // writeln("min dist: ", min_dist, " new ray min dist: ", this.distance(new_ray));
+                for j in i..MAX_STEPS {
+                    // if (hit.alpha_acc >= 1.0) {
+                    //     writeln("steps inside before break 1: ", steps_inside);
+                    //     hit.colour = Colour.ORANGE;
+                    //     break;
+                    // }
+                    var (new_dist, new_mat, new_scenenode, new_light_accumulation) = this.distance(new_ray);
+                    // write("new_dist: ", new_dist, " ");
+                    if (new_dist < (EPS + 0.01)) {
+                        // hit.colour = (hit.colour * hit.alpha_acc) + (new_mat.col * (1.0 - hit.alpha_acc));
+                        // hit.alpha_acc += new_mat.alpha * sample_distance;
+                        // if (hit.alpha_acc > 1.0) {
+                            // hit.alpha_acc = 1.0;
+                        // }
+                        steps_inside += 1;
+                        new_ray.advance(sample_distance);
+                    } else {
+                        // writeln("steps inside before break 2: ", steps_inside, "new_dist: ", new_dist);
+                        // hit.colour = Colour.PURPLE;
+                        break;
+                    }
+                }
+                ray = new_ray;
+                // writeln("steps inside: ", steps_inside, " alpha acc new: ", hit.alpha_acc);
+                hit.alpha_acc += mat.alpha * steps_inside * sample_distance;
+                if (hit.alpha_acc > 1.0) {
+                    hit.alpha_acc = 1.0;
+                }
+                // writeln("alpha acc after inside: ", hit.alpha_acc, " steps inside: ", steps_inside);
             } else {
+                // Advance the ray if no hit
                 ray.advance(min_dist);
             }
         }
 
+        if (hit.alpha_acc >= 1.0) {
+            hit.alpha_acc = 1.0;
+        }
         hit.hit_after_transparent(sky_mat);
 
         return hit;
